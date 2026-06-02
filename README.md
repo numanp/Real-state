@@ -31,9 +31,33 @@ Swipe-first real estate discovery. Scrolleás propiedades como en TikTok: like, 
 
 **Fuera de alcance (después):** chat, uploads de agentes, recomendación ML, transcodificación de video, push, social/follows.
 
+## Puesta en marcha
+
+```bash
+npm install
+# Creá un .env (NO se commitea) con tus credenciales de Supabase:
+#   EXPO_PUBLIC_SUPABASE_URL=https://TU-PROYECTO.supabase.co
+#   EXPO_PUBLIC_SUPABASE_ANON_KEY=TU-ANON-KEY
+npm run web      # o: npm run ios | npm run android
+```
+
+Solo las variables `EXPO_PUBLIC_*` entran al bundle (son **públicas** por diseño). La `anon key` es segura porque la autorización vive en RLS; la `service_role` **nunca** va al cliente.
+
+## Estructura
+
+```
+src/
+├── app/                  # Expo Router — rutas (thin)
+├── core/                 # cross-cutting: supabase/ (cliente anon), config/ (env zod)
+├── shared/ui/            # design system: primitives/ (átomos RNR), lib/ (cn)
+└── features/<dominio>/   # screaming arch: domain → application → infrastructure → ui  (desde M1)
+```
+
 ## Estado
 
-🏗️ **Génesis.** Diseño de fundaciones en curso (data model + RLS, threat model OWASP, arquitectura Expo, performance del feed). El documento `FOUNDATION.md` se genera a partir de ese diseño.
+- ✅ **M0** — Scaffold Expo SDK 56 + NativeWind 4.2 (tema shadcn por CSS vars) + cliente Supabase (anon + `expo-secure-store`) + base hexagonal. Bundle web verificado.
+- 🏗️ **M1 (siguiente)** — schema Postgres + RLS + entitlements + seed mock.
+- 📄 Diseño: [`FOUNDATION.md`](FOUNDATION.md) (core) · `MEMBERSHIP.md` (tiers/entitlements/billing).
 
 ## Convenciones
 
