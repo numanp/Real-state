@@ -1,22 +1,40 @@
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { container } from '@/core/di/container';
+import { useInteractionsStore } from '@/core/store/interactions-store';
 import { useAuth } from '@/features/auth/ui/hooks/use-auth';
 import { FeedList } from '@/features/feed/ui/components/feed-list';
 import { useFeed } from '@/features/feed/ui/hooks/use-feed';
 import { Button } from '@/shared/ui/primitives/button';
 
 /**
- * Smart container: wires the feed use-case (via useFeed) to the presentational
- * FeedList, plus a lightweight account entry point (anonymous browse stays open;
- * saving will require an account in the next milestone).
+ * Smart container: wires the feed use-case to the presentational FeedList, loads
+ * the signed-in user's likes into the interactions store (and clears them on
+ * sign-out), and exposes a lightweight account entry point.
  */
 export function FeedScreen() {
   const { items, loadMore } = useFeed();
-  const { isAuthenticated, signOut } = useAuth();
+  const { session, isAuthenticated, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  useEffect(() => {
+    const { reset, setLikedIds } = useInteractionsStore.getState();
+    if (!session) {
+      reset();
+      return;
+    }
+    let active = true;
+    void container.favorites.list(session.user.id).then((ids) => {
+      if (active) setLikedIds(ids);
+    });
+    return () => {
+      active = false;
+    };
+  }, [session]);
 
   return (
     <View className="flex-1 bg-black">

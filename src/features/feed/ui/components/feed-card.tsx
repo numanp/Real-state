@@ -3,6 +3,7 @@ import { memo } from 'react';
 import { View } from 'react-native';
 
 import type { FeedItem } from '@/features/feed/domain/entities/feed-item';
+import { FeedActions } from '@/features/feed/ui/components/feed-actions';
 import { formatMoney } from '@/shared/ui/lib/format';
 import { Text } from '@/shared/ui/primitives/text';
 
@@ -27,8 +28,10 @@ function specsLabel(item: FeedItem): string {
 }
 
 /**
- * Presentational full-screen card: the primary reel poster + an info overlay.
- * memo'd and free of fetching/store access so the scroll path stays at 60fps.
+ * Presentational full-screen card: primary reel poster + info overlay + the
+ * like/save action rail. The image/info stay memo-cheap; FeedActions manages its
+ * own interaction state. Overlays are pointerEvents="none" so only the rail is
+ * tappable.
  */
 export const FeedCard = memo(function FeedCard({ item, height, width }: Props) {
   return (
@@ -42,10 +45,9 @@ export const FeedCard = memo(function FeedCard({ item, height, width }: Props) {
         style={{ flex: 1 }}
       />
 
-      {/* scrim for text legibility */}
-      <View className="absolute inset-x-0 bottom-0 h-2/5 bg-black/50" />
+      <View pointerEvents="none" className="absolute inset-x-0 bottom-0 h-2/5 bg-black/50" />
 
-      <View className="absolute inset-x-0 bottom-0 gap-1 p-5 pb-12">
+      <View pointerEvents="none" className="absolute inset-x-0 bottom-0 gap-1 p-5 pb-12 pr-20">
         <View className="mb-1 self-start rounded-full bg-primary px-3 py-1">
           <Text className="text-xs font-semibold text-primary-foreground">
             {item.operation === 'buy' ? 'Venta' : 'Alquiler'}
@@ -60,6 +62,8 @@ export const FeedCard = memo(function FeedCard({ item, height, width }: Props) {
         </Text>
         <Text className="text-sm text-white/80">{specsLabel(item)}</Text>
       </View>
+
+      <FeedActions propertyId={item.id} likes={item.counts.likes} />
     </View>
   );
 });
