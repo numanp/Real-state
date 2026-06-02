@@ -13,7 +13,7 @@ import { Button } from '@/shared/ui/primitives/button';
 /**
  * Smart container: wires the feed use-case to the presentational FeedList, loads
  * the signed-in user's likes into the interactions store (and clears them on
- * sign-out), and exposes a lightweight account entry point.
+ * sign-out), and exposes the account + saved entry points.
  */
 export function FeedScreen() {
   const { items, loadMore } = useFeed();
@@ -39,7 +39,13 @@ export function FeedScreen() {
   return (
     <View className="flex-1 bg-black">
       <FeedList items={items} onEndReached={loadMore} />
-      <View className="absolute right-4" style={{ top: insets.top + 8 }}>
+      <View className="absolute right-4 flex-row gap-2" style={{ top: insets.top + 8 }}>
+        <Button
+          label="Guardados"
+          variant="secondary"
+          size="sm"
+          onPress={() => router.push(isAuthenticated ? '/saved' : '/sign-in')}
+        />
         <Button
           label={isAuthenticated ? 'Salir' : 'Ingresá'}
           variant="secondary"
