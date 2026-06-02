@@ -35,6 +35,9 @@ yarn-error.*
 supabase/.temp/
 supabase/.branches/
 
+# ---- design artifacts (large machine-generated dumps; FOUNDATION.md is the SSOT) ----
+docs/*.core.json
+
 # ---- OS / editor ----
 .DS_Store
 .vscode/
