@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { memo } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import type { FeedItem } from '@/features/feed/domain/entities/feed-item';
 import { FeedActions } from '@/features/feed/ui/components/feed-actions';
@@ -28,22 +29,25 @@ function specsLabel(item: FeedItem): string {
 }
 
 /**
- * Presentational full-screen card: primary reel poster + info overlay + the
- * like/save action rail. The image/info stay memo-cheap; FeedActions manages its
- * own interaction state. Overlays are pointerEvents="none" so only the rail is
- * tappable.
+ * Presentational full-screen card. Tapping the media opens the ficha; the
+ * info/scrim overlays are pointerEvents="none" and the action rail sits on top,
+ * so only the rail and the media are interactive.
  */
 export const FeedCard = memo(function FeedCard({ item, height, width }: Props) {
+  const router = useRouter();
+
   return (
     <View style={{ height, width }} className="bg-black">
-      <Image
-        source={item.primaryReel.posterUrl}
-        placeholder={item.primaryReel.blurhash}
-        recyclingKey={item.id}
-        contentFit="cover"
-        transition={200}
-        style={{ flex: 1 }}
-      />
+      <Pressable style={{ flex: 1 }} onPress={() => router.push(`/property/${item.id}`)}>
+        <Image
+          source={item.primaryReel.posterUrl}
+          placeholder={item.primaryReel.blurhash}
+          recyclingKey={item.id}
+          contentFit="cover"
+          transition={200}
+          style={{ flex: 1 }}
+        />
+      </Pressable>
 
       <View pointerEvents="none" className="absolute inset-x-0 bottom-0 h-2/5 bg-black/50" />
 
