@@ -1,3 +1,4 @@
+import { Bookmark, Heart } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -18,8 +19,12 @@ export function FeedActions({ propertyId, likes }: Props) {
   return (
     <>
       <View className="absolute bottom-36 right-3 items-center gap-6">
-        <Pressable onPress={toggleLike} className="items-center gap-1">
-          <Text className="text-4xl">{isLiked ? '❤️' : '🤍'}</Text>
+        <Pressable onPress={toggleLike} className="items-center gap-1" hitSlop={8}>
+          <Heart
+            size={36}
+            color={isLiked ? '#ef4444' : '#ffffff'}
+            fill={isLiked ? '#ef4444' : 'transparent'}
+          />
           <Text className="text-xs font-semibold text-white">{likes + (isLiked ? 1 : 0)}</Text>
         </Pressable>
         <Pressable
@@ -27,8 +32,9 @@ export function FeedActions({ propertyId, likes }: Props) {
             if (requireAuth()) setSheetOpen(true);
           }}
           className="items-center gap-1"
+          hitSlop={8}
         >
-          <Text className="text-4xl">{isSaved ? '🔖' : '🏷️'}</Text>
+          <Bookmark size={34} color="#ffffff" fill={isSaved ? '#ffffff' : 'transparent'} />
           <Text className="text-xs font-semibold text-white">Guardar</Text>
         </Pressable>
       </View>

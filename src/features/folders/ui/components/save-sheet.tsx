@@ -1,3 +1,4 @@
+import { CheckSquare, Square } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 
@@ -85,7 +86,11 @@ export function SaveSheet({ visible, propertyId, onClose, onSaved }: Props) {
                 className="flex-row items-center justify-between py-3"
               >
                 <Text className="text-base">{f.name}</Text>
-                <Text className="text-lg">{selected.includes(f.id) ? '✅' : '⬜️'}</Text>
+                {selected.includes(f.id) ? (
+                  <CheckSquare size={22} color="#18181b" />
+                ) : (
+                  <Square size={22} color="#a1a1aa" />
+                )}
               </Pressable>
             ))
           )}
