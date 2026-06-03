@@ -1,6 +1,7 @@
 import type { FeedItem } from '@/features/feed/domain/entities/feed-item';
 import type {
   FeedCursor,
+  FeedFilters,
   FeedPage,
   FeedQuery,
   FeedRepository,
@@ -24,10 +25,25 @@ function byPublishedDesc(a: FeedItem, b: FeedItem): number {
   return a.id < b.id ? 1 : -1;
 }
 
+function matchesFilters(item: FeedItem, filters?: FeedFilters): boolean {
+  if (!filters) return true;
+  if (filters.operation && item.operation !== filters.operation) return false;
+  if (filters.minBedrooms !== undefined && item.specs.bedrooms < filters.minBedrooms) return false;
+  if (filters.city && !item.location.city.toLowerCase().includes(filters.city.toLowerCase())) {
+    return false;
+  }
+  if (filters.currency && item.price.currency !== filters.currency) return false;
+  if (filters.maxPriceCents !== undefined && item.price.amountCents > filters.maxPriceCents) {
+    return false;
+  }
+  return true;
+}
+
 /**
  * In-memory FeedRepository — lets the whole feed run with NO database. It
  * mirrors the Supabase keyset pagination (publishedAt DESC, id DESC, never
- * OFFSET) so swapping in SupabaseFeedRepository later changes nothing upstream.
+ * OFFSET) and applies filters server-side-style, so swapping in
+ * SupabaseFeedRepository later changes nothing upstream.
  */
 export class InMemoryFeedRepository implements FeedRepository {
   private readonly sorted: FeedItem[];
@@ -36,9 +52,10 @@ export class InMemoryFeedRepository implements FeedRepository {
     this.sorted = [...items].sort(byPublishedDesc);
   }
 
-  async getPage({ cursor, pageSize }: FeedQuery): Promise<FeedPage> {
+  async getPage({ cursor, pageSize, filters }: FeedQuery): Promise<FeedPage> {
     const size = pageSize ?? FALLBACK_PAGE_SIZE;
-    const after = cursor ? this.sorted.filter((item) => isAfter(item, cursor)) : this.sorted;
+    const matching = this.sorted.filter((item) => matchesFilters(item, filters));
+    const after = cursor ? matching.filter((item) => isAfter(item, cursor)) : matching;
     const items = after.slice(0, size);
 
     const last = items[items.length - 1];

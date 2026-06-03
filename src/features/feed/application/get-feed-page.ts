@@ -12,6 +12,10 @@ export class GetFeedPage {
 
   execute(query: FeedQuery = {}): Promise<FeedPage> {
     const pageSize = query.pageSize ?? DEFAULT_FEED_PAGE_SIZE;
-    return this.feed.getPage({ cursor: query.cursor ?? null, pageSize });
+    return this.feed.getPage({
+      cursor: query.cursor ?? null,
+      pageSize,
+      filters: query.filters,
+    });
   }
 }

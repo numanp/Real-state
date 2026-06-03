@@ -10,6 +10,16 @@ export interface FeedCursor {
   id: string;
 }
 
+export interface FeedFilters {
+  operation?: 'buy' | 'rent';
+  minBedrooms?: number;
+  /** Case-insensitive substring match on the city. */
+  city?: string;
+  /** When set, only listings in this currency (keeps maxPriceCents meaningful). */
+  currency?: string;
+  maxPriceCents?: number;
+}
+
 export interface FeedPage {
   items: FeedItem[];
   /** Null when there are no more items after this page. */
@@ -19,6 +29,7 @@ export interface FeedPage {
 export interface FeedQuery {
   cursor?: FeedCursor | null;
   pageSize?: number;
+  filters?: FeedFilters;
 }
 
 /**

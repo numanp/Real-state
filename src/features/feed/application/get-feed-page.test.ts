@@ -14,7 +14,7 @@ function makeItem(i: number): FeedItem {
     operation: i % 2 === 0 ? 'buy' : 'rent',
     price: { amountCents: 100_000_00 + i, currency: 'USD', period: 'once' },
     location: { neighborhood: 'Palermo', city: 'Buenos Aires' },
-    specs: { bedrooms: 2, bathrooms: 1, areaSqm: 55 },
+    specs: { bedrooms: (i % 3) + 1, bathrooms: 1, areaSqm: 55 },
     primaryReel: { id: `reel-${n}`, mediaType: 'video', posterUrl: 'p', sources: ['s'] },
     counts: { likes: 0, saves: 0 },
     publishedAt: `2026-06-01T10:${minute}:00.000Z`,
@@ -54,5 +54,31 @@ describe('GetFeedPage', () => {
     const page = await feed(0).execute();
     expect(page.items).toEqual([]);
     expect(page.nextCursor).toBeNull();
+  });
+
+  it('filters by operation', async () => {
+    const page = await feed(20).execute({ pageSize: 50, filters: { operation: 'rent' } });
+    expect(page.items.length).toBeGreaterThan(0);
+    expect(page.items.every((i) => i.operation === 'rent')).toBe(true);
+  });
+
+  it('filters by minimum bedrooms', async () => {
+    const page = await feed(20).execute({ pageSize: 50, filters: { minBedrooms: 3 } });
+    expect(page.items.every((i) => i.specs.bedrooms >= 3)).toBe(true);
+  });
+
+  it('filters by city (case-insensitive) — none match for a different city', async () => {
+    const page = await feed(20).execute({ pageSize: 50, filters: { city: 'rio' } });
+    expect(page.items).toEqual([]);
+  });
+
+  it('keyset-paginates the FILTERED set without overlap', async () => {
+    const useCase = feed(20);
+    const filters = { operation: 'buy' as const };
+    const p1 = await useCase.execute({ pageSize: 4, filters });
+    const p2 = await useCase.execute({ pageSize: 4, filters, cursor: p1.nextCursor });
+    const ids = [...p1.items, ...p2.items].map((i) => i.id);
+    expect(new Set(ids).size).toBe(ids.length); // no overlap
+    expect([...p1.items, ...p2.items].every((i) => i.operation === 'buy')).toBe(true);
   });
 });
