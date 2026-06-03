@@ -449,7 +449,7 @@ LOOP
     published_at, listed_updated_at, other_listings_count
   ) VALUES (
     r.id,
-    'RE-' || upper(substr(replace(r.id::text, '-', ''), 1, 8)),
+    'RE-' || upper(replace(r.id::text, '-', '')),
     'agency',
     CASE WHEN r.locale='pt-BR' THEN 'Imobiliária Horizonte' ELSE 'Inmobiliaria Horizonte' END,
     'agencies/horizonte/logo.webp',
