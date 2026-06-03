@@ -7,7 +7,13 @@ import { z } from 'zod';
   The Supabase anon key is safe to ship: authorization is enforced by Postgres
   RLS, not by this client. The service_role key must NEVER appear in env, code,
   or any client artifact.
+
+  Tolerant on purpose: when credentials are absent we DON'T crash — the app runs
+  on the in-memory mock repositories (see core/di/container). `isSupabaseConfigured`
+  flips the app onto the real backend once a real .env is present.
 */
+const PLACEHOLDER_URL = 'https://placeholder.supabase.co';
+
 const schema = z.object({
   EXPO_PUBLIC_SUPABASE_URL: z.string().url(),
   EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
@@ -18,12 +24,10 @@ const parsed = schema.safeParse({
   EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
 });
 
-if (!parsed.success) {
-  // Fail fast and loud: a half-configured client must not boot silently.
-  const detail = parsed.error.issues
-    .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
-    .join('\n');
-  throw new Error(`Invalid environment configuration:\n${detail}`);
-}
+export const env = parsed.success
+  ? parsed.data
+  : { EXPO_PUBLIC_SUPABASE_URL: PLACEHOLDER_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY: 'anon-placeholder' };
 
-export const env = parsed.data;
+/** True only when real Supabase credentials are present (not the placeholder). */
+export const isSupabaseConfigured =
+  parsed.success && parsed.data.EXPO_PUBLIC_SUPABASE_URL !== PLACEHOLDER_URL;

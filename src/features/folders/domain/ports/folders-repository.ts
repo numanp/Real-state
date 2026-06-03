@@ -1,6 +1,6 @@
 import type { Folder } from '@/features/folders/domain/entities/folder';
 
-export type FolderErrorCode = 'invalid_name' | 'duplicate_name' | 'not_found';
+export type FolderErrorCode = 'invalid_name' | 'duplicate_name' | 'not_found' | 'quota_exceeded';
 
 export class FolderError extends Error {
   constructor(
