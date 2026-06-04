@@ -45,6 +45,6 @@ export interface PropertyDetail {
     country?: string;
   };
   gallery: string[];
-  advertiser: { type: 'agency' | 'owner' | 'managed'; name?: string };
+  advertiser: { type: 'agency' | 'owner' | 'managed'; name?: string; agencyId?: string };
   publishedAt: string;
 }

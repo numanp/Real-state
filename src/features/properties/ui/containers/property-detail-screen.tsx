@@ -1,9 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Share2 } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { container } from '@/core/di/container';
 import { ContactSheet } from '@/features/contact/ui/components/contact-sheet';
 import { useFeedTracking } from '@/features/personalization/ui/use-feed-tracking';
 import { AmenitiesList } from '@/features/properties/ui/components/amenities-list';
@@ -13,6 +14,9 @@ import { PhotoGallery } from '@/features/properties/ui/components/photo-gallery'
 import { SpecsGrid } from '@/features/properties/ui/components/specs-grid';
 import { useProperty } from '@/features/properties/ui/hooks/use-property';
 import { shareProperty } from '@/features/properties/ui/lib/share-property';
+import type { AgencyRating } from '@/features/reviews/domain/entities/review';
+import { AgencyRatingBadge } from '@/features/reviews/ui/components/rating-badge';
+import { ReviewSheet } from '@/features/reviews/ui/components/review-sheet';
 import { formatMoney } from '@/shared/ui/lib/format';
 import { Button } from '@/shared/ui/primitives/button';
 import { Text } from '@/shared/ui/primitives/text';
@@ -24,6 +28,26 @@ export function PropertyDetailScreen() {
   const { property, loading } = useProperty(id);
   const { trackShare } = useFeedTracking();
   const [contactOpen, setContactOpen] = useState(false);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const agencyId = property?.advertiser.agencyId;
+  const [agencyRating, setAgencyRating] = useState<AgencyRating | null>(null);
+
+  useEffect(() => {
+    if (!agencyId) {
+      setAgencyRating(null);
+      return;
+    }
+    let active = true;
+    void container.reviews
+      .getRating(agencyId)
+      .then((r) => {
+        if (active) setAgencyRating(r);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [agencyId]);
 
   if (loading) {
     return (
@@ -88,7 +112,15 @@ export function PropertyDetailScreen() {
             <Text className="text-sm leading-5">{property.description}</Text>
           </FichaSection>
           <FichaSection title="Anunciante">
-            <Text className="text-sm">{advertiserLabel}</Text>
+            <View className="gap-2">
+              <Text className="text-sm">{advertiserLabel}</Text>
+              {agencyId ? (
+                <AgencyRatingBadge
+                  rating={agencyRating ?? { agencyId, reviewCount: 0, average: null }}
+                  onPress={() => setReviewsOpen(true)}
+                />
+              ) : null}
+            </View>
           </FichaSection>
         </View>
       </ScrollView>
@@ -116,6 +148,13 @@ export function PropertyDetailScreen() {
         visible={contactOpen}
         propertyId={property.id}
         onClose={() => setContactOpen(false)}
+      />
+
+      <ReviewSheet
+        visible={reviewsOpen}
+        agencyId={agencyId}
+        agencyName={property.advertiser.name}
+        onClose={() => setReviewsOpen(false)}
       />
     </View>
   );

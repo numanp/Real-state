@@ -105,6 +105,14 @@ export const MOCK_PROPERTIES: PropertyDetail[] = ROWS.map((r, i) => ({
   amenities: amenities(r.market, 4 + (i % 3), 3 + (i % 2)),
   location: { neighborhood: r.neighborhood, city: r.city, region: r.region, country: r.country },
   gallery: gallery(r.seed),
-  advertiser: r.advertiser,
+  advertiser: {
+    ...r.advertiser,
+    // Stable synthetic id so the in-memory reviews repo groups reviews per
+    // named agency across listings (offline demo parity with the backend).
+    agencyId:
+      r.advertiser.type !== 'owner' && r.advertiser.name
+        ? `mock-${r.advertiser.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+        : undefined,
+  },
   publishedAt: new Date(BASE - i * 3_600_000).toISOString(),
 }));

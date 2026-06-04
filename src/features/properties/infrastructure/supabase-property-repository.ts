@@ -73,7 +73,10 @@ interface Row {
     label: string | null;
   }[];
   property_terms: { is_furnished: string | null; pets_allowed: boolean | null } | { is_furnished: string | null; pets_allowed: boolean | null }[] | null;
-  listing_details: { advertiser_type: string; agency_name: string | null } | { advertiser_type: string; agency_name: string | null }[] | null;
+  listing_details:
+    | { advertiser_type: string; agency_name: string | null; agency_id: string | null }
+    | { advertiser_type: string; agency_name: string | null; agency_id: string | null }[]
+    | null;
   property_amenities: {
     available: boolean;
     amenities_catalog: { label_es: string; label_pt: string; scope: 'unit' | 'building' } | null;
@@ -87,7 +90,7 @@ const SELECT = `
   city, region, country, published_at,
   property_costs ( cost_type, amount_cents, currency, period, label ),
   property_terms ( is_furnished, pets_allowed ),
-  listing_details ( advertiser_type, agency_name ),
+  listing_details ( advertiser_type, agency_name, agency_id ),
   property_amenities ( available, amenities_catalog ( label_es, label_pt, scope ) )
 `;
 
@@ -163,6 +166,7 @@ function toDetail(r: Row): PropertyDetail {
     advertiser: {
       type: (listing?.advertiser_type as PropertyDetail['advertiser']['type']) ?? 'agency',
       name: listing?.agency_name ?? undefined,
+      agencyId: listing?.agency_id ?? undefined,
     },
     publishedAt: r.published_at ?? new Date(0).toISOString(),
   };
