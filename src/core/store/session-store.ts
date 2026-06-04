@@ -11,11 +11,17 @@ interface SessionState {
   setReady: (isReady: boolean) => void;
 }
 
-/** Same user + same token → the same session, regardless of object identity. */
+/** Value equality across every Session field, regardless of object identity —
+ *  so a token refresh OR an anon→authenticated / email change still updates. */
 function sameSession(a: Session | null, b: Session | null): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
-  return a.user.id === b.user.id && a.accessToken === b.accessToken;
+  return (
+    a.user.id === b.user.id &&
+    a.user.email === b.user.email &&
+    a.user.isAnonymous === b.user.isAnonymous &&
+    a.accessToken === b.accessToken
+  );
 }
 
 /** Synchronous client snapshot of the auth session (the server source of truth

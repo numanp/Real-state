@@ -72,12 +72,14 @@ export class SupabaseEntitlementsRepository implements EntitlementsRepository {
   }
 
   async startUltimateTrial(fingerprint: string): Promise<TrialResult> {
-    this.cache = null; // entitlements are about to change — force a fresh getMine next
     const { data, error } = await supabase.rpc('start_ultimate_trial', {
       p_identity_fingerprint: fingerprint,
       p_device_fingerprint: fingerprint,
     });
     if (error) throw new Error(`entitlements.trial: ${error.message}`);
+    // Invalidate AFTER the trial commits, so a getMine() that raced the RPC and
+    // cached pre-trial data can't be served stale by the follow-up refresh().
+    this.cache = null;
     const row = Array.isArray(data) ? data[0] : data;
     return {
       eligible: Boolean(row?.eligible),
