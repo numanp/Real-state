@@ -9,6 +9,7 @@ import { useInteractionsStore } from '@/core/store/interactions-store';
 import { useAuth } from '@/features/auth/ui/hooks/use-auth';
 import { FeedList } from '@/features/feed/ui/components/feed-list';
 import { FilterSheet } from '@/features/feed/ui/components/filter-sheet';
+import { SaveSheetHost } from '@/features/folders/ui/components/save-sheet-host';
 import { useFeed } from '@/features/feed/ui/hooks/use-feed';
 import { useFeedModeStore } from '@/core/store/feed-mode-store';
 import { useEntitlements } from '@/features/membership/ui/hooks/use-entitlements';
@@ -131,6 +132,8 @@ export function FeedScreen() {
           isAuthenticated ? void createSearch(name, f) : router.push('/sign-in')
         }
       />
+
+      <SaveSheetHost />
     </View>
   );
 }
