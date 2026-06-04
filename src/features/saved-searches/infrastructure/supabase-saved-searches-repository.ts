@@ -40,4 +40,19 @@ export class SupabaseSavedSearchesRepository implements SavedSearchesRepository 
     const { error } = await supabase.from('saved_searches').delete().eq('id', id);
     if (error) throw new Error(`savedSearches.remove: ${error.message}`);
   }
+
+  async alertCounts(_userId: string): Promise<Record<string, number>> {
+    const { data, error } = await supabase.rpc('my_saved_search_alerts');
+    if (error) throw new Error(`savedSearches.alertCounts: ${error.message}`);
+    const out: Record<string, number> = {};
+    for (const r of (data ?? []) as { saved_search_id: string; new_count: number }[]) {
+      out[r.saved_search_id] = r.new_count;
+    }
+    return out;
+  }
+
+  async markSeen(_userId: string, id: string): Promise<void> {
+    const { error } = await supabase.rpc('mark_saved_search_seen', { p_saved_search_id: id });
+    if (error) throw new Error(`savedSearches.markSeen: ${error.message}`);
+  }
 }

@@ -26,7 +26,7 @@ export function SavedScreen() {
   const insets = useSafeAreaInsets();
   const { properties: liked } = useLikedProperties();
   const { folders } = useFolders();
-  const { searches, remove } = useSavedSearches();
+  const { searches, remove, markSeen } = useSavedSearches();
   const { listings } = useMyListings();
   const { state: verification } = useVerification();
   const compareIds = useCompareStore((s) => s.selectedIds);
@@ -45,6 +45,7 @@ export function SavedScreen() {
   }
 
   function applySearch(search: SavedSearchWithCount) {
+    void markSeen(search.id); // opening the search clears its "new" badge
     setFilters(search.filters);
     setMode('recent');
     router.push('/');
@@ -140,7 +141,16 @@ export function SavedScreen() {
               className="flex-row items-center justify-between rounded-xl bg-card p-4"
             >
               <Pressable className="flex-1" onPress={() => applySearch(s)}>
-                <Text className="text-base font-medium">{s.name}</Text>
+                <View className="flex-row items-center gap-2">
+                  <Text className="text-base font-medium">{s.name}</Text>
+                  {s.newCount > 0 ? (
+                    <View className="rounded-full bg-primary px-2 py-0.5">
+                      <Text className="text-[11px] font-semibold text-primary-foreground">
+                        {s.newCount} {s.newCount === 1 ? 'nueva' : 'nuevas'}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
                 <Text className="text-xs text-muted-foreground">
                   {s.matchCount} {s.matchCount === 1 ? 'resultado' : 'resultados'}
                 </Text>

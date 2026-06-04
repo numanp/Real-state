@@ -36,4 +36,11 @@ export class InMemorySavedSearchesRepository implements SavedSearchesRepository 
     const idx = list.findIndex((s) => s.id === id);
     if (idx >= 0) list.splice(idx, 1);
   }
+
+  // Offline has no published-after-seen feed, so there are no "new" matches.
+  async alertCounts(): Promise<Record<string, number>> {
+    return {};
+  }
+
+  async markSeen(): Promise<void> {}
 }

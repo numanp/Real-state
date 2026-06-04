@@ -22,4 +22,12 @@ export class SavedSearchesService {
   remove(userId: string, id: string): Promise<void> {
     return this.repo.remove(userId, id);
   }
+
+  alertCounts(userId: string): Promise<Record<string, number>> {
+    return this.repo.alertCounts(userId);
+  }
+
+  markSeen(userId: string, id: string): Promise<void> {
+    return this.repo.markSeen(userId, id);
+  }
 }
