@@ -1,12 +1,21 @@
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig } from 'vitest/config';
 
-// Pure-TS unit tests for the domain / application / core layers (no React Native).
-// RN component tests will use jest-expo separately (added in M3).
-// tsconfig `@/*` paths resolve natively via Vite (no plugin needed).
+// Pure-TS unit tests for the domain / application layers (no React Native).
+// `@/` is aliased manually (the native resolve.tsconfigPaths option proved flaky
+// in vitest 4 → intermittent "Cannot read properties of undefined (reading 'config')").
+const src = fileURLToPath(new URL('./src', import.meta.url));
+
 export default defineConfig({
-  resolve: { tsconfigPaths: true },
+  resolve: {
+    alias: [{ find: /^@\//, replacement: `${src}/` }],
+  },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Run test files sequentially: parallel workers intermittently race on the
+    // vite transform cache ("reading config"). The suite is tiny, so this is free.
+    fileParallelism: false,
   },
 });
