@@ -70,6 +70,80 @@ export type Database = {
         }
         Relationships: []
       }
+      badge_audit: {
+        Row: {
+          action: string
+          actor: string
+          badge_type: Database["public"]["Enums"]["badge_type"] | null
+          created_at: string
+          id: string
+          payload: Json | null
+          subject_id: string
+        }
+        Insert: {
+          action: string
+          actor: string
+          badge_type?: Database["public"]["Enums"]["badge_type"] | null
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          subject_id: string
+        }
+        Update: {
+          action?: string
+          actor?: string
+          badge_type?: Database["public"]["Enums"]["badge_type"] | null
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          subject_id?: string
+        }
+        Relationships: []
+      }
+      badge_requests: {
+        Row: {
+          account_kind: Database["public"]["Enums"]["account_kind"]
+          badge_type: Database["public"]["Enums"]["badge_type"]
+          created_at: string
+          decided_at: string | null
+          id: string
+          provider_ref: string | null
+          reason: string | null
+          status: Database["public"]["Enums"]["badge_request_status"]
+          subject_id: string
+        }
+        Insert: {
+          account_kind: Database["public"]["Enums"]["account_kind"]
+          badge_type: Database["public"]["Enums"]["badge_type"]
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          provider_ref?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["badge_request_status"]
+          subject_id: string
+        }
+        Update: {
+          account_kind?: Database["public"]["Enums"]["account_kind"]
+          badge_type?: Database["public"]["Enums"]["badge_type"]
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          provider_ref?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["badge_request_status"]
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "badge_requests_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_usage_counters: {
         Row: {
           count: number
@@ -261,6 +335,54 @@ export type Database = {
           },
         ]
       }
+      granted_badges: {
+        Row: {
+          badge_type: Database["public"]["Enums"]["badge_type"]
+          granted_at: string
+          method: Database["public"]["Enums"]["verification_method"]
+          provider_ref: string | null
+          revoked_at: string | null
+          source_request_id: string | null
+          status: Database["public"]["Enums"]["badge_status"]
+          subject_id: string
+        }
+        Insert: {
+          badge_type: Database["public"]["Enums"]["badge_type"]
+          granted_at?: string
+          method: Database["public"]["Enums"]["verification_method"]
+          provider_ref?: string | null
+          revoked_at?: string | null
+          source_request_id?: string | null
+          status?: Database["public"]["Enums"]["badge_status"]
+          subject_id: string
+        }
+        Update: {
+          badge_type?: Database["public"]["Enums"]["badge_type"]
+          granted_at?: string
+          method?: Database["public"]["Enums"]["verification_method"]
+          provider_ref?: string | null
+          revoked_at?: string | null
+          source_request_id?: string | null
+          status?: Database["public"]["Enums"]["badge_status"]
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "granted_badges_source_request_id_fkey"
+            columns: ["source_request_id"]
+            isOneToOne: false
+            referencedRelation: "badge_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "granted_badges_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       likes: {
         Row: {
           created_at: string
@@ -396,6 +518,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_kind: Database["public"]["Enums"]["account_kind"]
           avatar_path: string | null
           created_at: string
           display_name: string | null
@@ -405,6 +528,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          account_kind?: Database["public"]["Enums"]["account_kind"]
           avatar_path?: string | null
           created_at?: string
           display_name?: string | null
@@ -414,6 +538,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          account_kind?: Database["public"]["Enums"]["account_kind"]
           avatar_path?: string | null
           created_at?: string
           display_name?: string | null
@@ -1227,6 +1352,41 @@ export type Database = {
           },
         ]
       }
+      verification_attempts: {
+        Row: {
+          badge_type: Database["public"]["Enums"]["badge_type"]
+          created_at: string
+          id: string
+          outcome: Database["public"]["Enums"]["badge_status"] | null
+          profile_id: string
+          provider_ref: string | null
+        }
+        Insert: {
+          badge_type: Database["public"]["Enums"]["badge_type"]
+          created_at?: string
+          id?: string
+          outcome?: Database["public"]["Enums"]["badge_status"] | null
+          profile_id: string
+          provider_ref?: string | null
+        }
+        Update: {
+          badge_type?: Database["public"]["Enums"]["badge_type"]
+          created_at?: string
+          id?: string
+          outcome?: Database["public"]["Enums"]["badge_status"] | null
+          profile_id?: string
+          provider_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_attempts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_events: {
         Row: {
           app_user_id: string
@@ -1265,6 +1425,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      badge_matches_kind: {
+        Args: {
+          p_badge: Database["public"]["Enums"]["badge_type"]
+          p_kind: Database["public"]["Enums"]["account_kind"]
+        }
+        Returns: boolean
+      }
       dev_grant_entitlement: {
         Args: {
           p_tier: Database["public"]["Enums"]["app_tier"]
@@ -1280,7 +1447,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_badges_for: {
+        Args: { p_subject: string }
+        Returns: {
+          badge_type: Database["public"]["Enums"]["badge_type"]
+        }[]
+      }
       get_listing_contact: { Args: { p_property_id: string }; Returns: Json }
+      get_my_badges: { Args: never; Returns: Json }
       get_my_entitlements: {
         Args: never
         Returns: {
@@ -1291,6 +1465,15 @@ export type Database = {
           level_value: string
           limit_int: number
         }[]
+      }
+      grant_badge: {
+        Args: {
+          p_badge_type: Database["public"]["Enums"]["badge_type"]
+          p_method: Database["public"]["Enums"]["verification_method"]
+          p_provider_ref?: string
+          p_subject: string
+        }
+        Returns: undefined
       }
       is_property_visible: { Args: { p_property_id: string }; Returns: boolean }
       is_storage_object_visible: { Args: { p_name: string }; Returns: boolean }
@@ -1371,6 +1554,29 @@ export type Database = {
           used: number
         }[]
       }
+      request_badge: {
+        Args: {
+          p_badge_type: Database["public"]["Enums"]["badge_type"]
+          p_provider_ref?: string
+        }
+        Returns: {
+          account_kind: Database["public"]["Enums"]["account_kind"]
+          badge_type: Database["public"]["Enums"]["badge_type"]
+          created_at: string
+          decided_at: string | null
+          id: string
+          provider_ref: string | null
+          reason: string | null
+          status: Database["public"]["Enums"]["badge_request_status"]
+          subject_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "badge_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       resolve_entitlement: {
         Args: {
           p_key: Database["public"]["Enums"]["entitlement_key"]
@@ -1383,6 +1589,18 @@ export type Database = {
           limit_int: number
         }[]
       }
+      revoke_badge: {
+        Args: {
+          p_badge_type: Database["public"]["Enums"]["badge_type"]
+          p_reason?: string
+          p_subject: string
+        }
+        Returns: undefined
+      }
+      start_kyc_verification: {
+        Args: { p_badge_type: Database["public"]["Enums"]["badge_type"] }
+        Returns: string
+      }
       start_ultimate_trial: {
         Args: { p_device_fingerprint?: string; p_identity_fingerprint: string }
         Returns: {
@@ -1393,6 +1611,7 @@ export type Database = {
       }
     }
     Enums: {
+      account_kind: "person" | "agency"
       advertiser_type: "agency" | "owner" | "managed"
       amenity_category:
         | "comfort"
@@ -1404,6 +1623,9 @@ export type Database = {
         | "accessibility"
       amenity_scope: "unit" | "building"
       app_tier: "free" | "pro" | "ultimate" | "top"
+      badge_request_status: "pending" | "approved" | "rejected"
+      badge_status: "pending" | "verified" | "revoked"
+      badge_type: "identity" | "agency"
       cost_period: "monthly" | "yearly" | "once"
       cost_type:
         | "rent"
@@ -1500,6 +1722,7 @@ export type Database = {
         | "paddle"
         | "promotional"
       usage_metric: "swipe"
+      verification_method: "kyc" | "license" | "manual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1630,6 +1853,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      account_kind: ["person", "agency"],
       advertiser_type: ["agency", "owner", "managed"],
       amenity_category: [
         "comfort",
@@ -1642,6 +1866,9 @@ export const Constants = {
       ],
       amenity_scope: ["unit", "building"],
       app_tier: ["free", "pro", "ultimate", "top"],
+      badge_request_status: ["pending", "approved", "rejected"],
+      badge_status: ["pending", "verified", "revoked"],
+      badge_type: ["identity", "agency"],
       cost_period: ["monthly", "yearly", "once"],
       cost_type: [
         "rent",
@@ -1741,6 +1968,7 @@ export const Constants = {
       ],
       sub_store: ["app_store", "play_store", "stripe", "paddle", "promotional"],
       usage_metric: ["swipe"],
+      verification_method: ["kyc", "license", "manual"],
     },
   },
 } as const
