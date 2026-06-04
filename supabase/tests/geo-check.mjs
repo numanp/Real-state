@@ -25,6 +25,7 @@ const { data, error } = await anon
   .from('properties')
   .select('id, city, latitude, longitude')
   .eq('status', 'active')
+  .not('location', 'is', null) // ignore geo-less test rows other suites may have inserted
   .limit(1)
   .maybeSingle();
 
