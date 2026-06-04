@@ -25,6 +25,8 @@ import { FeedTracker } from '@/features/personalization/application/feed-tracker
 import { InMemoryFeedEventsRepository } from '@/features/personalization/infrastructure/in-memory-feed-events-repository';
 import { SupabaseFeedEventsRepository } from '@/features/personalization/infrastructure/supabase-feed-events-repository';
 import { GetProperty } from '@/features/properties/application/get-property';
+import { InMemoryPushRepository } from '@/features/push/infrastructure/in-memory-push-repository';
+import { SupabasePushRepository } from '@/features/push/infrastructure/supabase-push-repository';
 import { ReviewsService } from '@/features/reviews/application/reviews-service';
 import { InMemoryReviewsRepository } from '@/features/reviews/infrastructure/in-memory-reviews-repository';
 import { SupabaseReviewsRepository } from '@/features/reviews/infrastructure/supabase-reviews-repository';
@@ -77,6 +79,7 @@ const contactRepository = useDb
 const reviewsRepository = useDb
   ? new SupabaseReviewsRepository()
   : new InMemoryReviewsRepository();
+const pushRepository = useDb ? new SupabasePushRepository() : new InMemoryPushRepository();
 
 export const container = {
   getFeedPage: new GetFeedPage(feedRepository),
@@ -96,4 +99,5 @@ export const container = {
   verification: new VerificationService(verificationRepository),
   contact: contactRepository,
   reviews: new ReviewsService(reviewsRepository),
+  push: pushRepository,
 } as const;
