@@ -46,7 +46,15 @@ export function SavedScreen() {
     >
       <View className="flex-row items-center justify-between px-5 pb-2">
         <Text className="text-2xl font-bold">Guardados</Text>
-        <Button label="‹ Feed" variant="secondary" size="sm" onPress={() => router.back()} />
+        <View className="flex-row gap-2">
+          <Button
+            label="✨ Premium"
+            variant="secondary"
+            size="sm"
+            onPress={() => router.push('/membership')}
+          />
+          <Button label="‹ Feed" variant="secondary" size="sm" onPress={() => router.back()} />
+        </View>
       </View>
 
       <Text className="px-5 pb-2 pt-3 text-base font-bold">Me gusta</Text>

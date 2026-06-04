@@ -11,6 +11,8 @@ import { GetFeedPage } from '@/features/feed/application/get-feed-page';
 import { InMemoryFeedRepository } from '@/features/feed/infrastructure/in-memory-feed-repository';
 import { MOCK_FEED } from '@/features/feed/infrastructure/mock-feed-data';
 import { SupabaseFeedRepository } from '@/features/feed/infrastructure/supabase-feed-repository';
+import { InMemoryEntitlementsRepository } from '@/features/membership/infrastructure/in-memory-entitlements-repository';
+import { SupabaseEntitlementsRepository } from '@/features/membership/infrastructure/supabase-entitlements-repository';
 import { FoldersService } from '@/features/folders/application/folders-service';
 import { InMemoryFoldersRepository } from '@/features/folders/infrastructure/in-memory-folders-repository';
 import { SupabaseFoldersRepository } from '@/features/folders/infrastructure/supabase-folders-repository';
@@ -49,6 +51,9 @@ const feedEventsRepository = useDb
 const savedSearchesRepository = useDb
   ? new SupabaseSavedSearchesRepository()
   : new InMemorySavedSearchesRepository();
+const entitlementsRepository = useDb
+  ? new SupabaseEntitlementsRepository()
+  : new InMemoryEntitlementsRepository();
 
 export const container = {
   getFeedPage: new GetFeedPage(feedRepository),
@@ -63,4 +68,5 @@ export const container = {
   folders: new FoldersService(foldersRepository),
   feedTracker: new FeedTracker(feedEventsRepository),
   savedSearches: new SavedSearchesService(savedSearchesRepository),
+  entitlements: entitlementsRepository,
 } as const;

@@ -11,6 +11,7 @@ import { FeedList } from '@/features/feed/ui/components/feed-list';
 import { FilterSheet } from '@/features/feed/ui/components/filter-sheet';
 import { useFeed } from '@/features/feed/ui/hooks/use-feed';
 import { useFeedModeStore } from '@/core/store/feed-mode-store';
+import { useEntitlements } from '@/features/membership/ui/hooks/use-entitlements';
 import { useFeedTracking } from '@/features/personalization/ui/use-feed-tracking';
 import { useSavedSearches } from '@/features/saved-searches/ui/hooks/use-saved-searches';
 import { cn } from '@/shared/ui/lib/cn';
@@ -32,6 +33,7 @@ export function FeedScreen() {
   const mode = useFeedModeStore((s) => s.mode);
   const setMode = useFeedModeStore((s) => s.setMode);
   const { create: createSearch } = useSavedSearches();
+  useEntitlements(); // load the user's entitlements into the store (gates read it)
   const [filterOpen, setFilterOpen] = useState(false);
 
   const activeFilters = countActiveFilters(filters);

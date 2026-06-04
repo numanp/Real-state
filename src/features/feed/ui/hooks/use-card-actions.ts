@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 
 import { container } from '@/core/di/container';
+import { useEntitlementsStore } from '@/core/store/entitlements-store';
 import { useFeedControlStore } from '@/core/store/feed-control-store';
 import { useInteractionsStore } from '@/core/store/interactions-store';
 import { useSessionStore } from '@/core/store/session-store';
@@ -65,9 +66,14 @@ export function useCardActions(propertyId: string) {
   }, [requireAuth, session, propertyId, setLiked, trackSuperLike, advanceBy]);
 
   const rewind = useCallback(() => {
+    // Rewind is a premium entitlement (free tier = off) → server-enforced, gated here too.
+    if (!useEntitlementsStore.getState().entitlements.rewind) {
+      router.push('/membership');
+      return;
+    }
     trackRewind(propertyId);
     advanceBy(-1);
-  }, [trackRewind, propertyId, advanceBy]);
+  }, [router, trackRewind, propertyId, advanceBy]);
 
   return { isLiked, isSaved, requireAuth, toggleLike, markSaved, pass, superLike, rewind };
 }
