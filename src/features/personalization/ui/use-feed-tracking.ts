@@ -39,6 +39,7 @@ export function useFeedTracking() {
     trackPass: useCallback((id: string) => emit('pass', id), [emit]),
     trackSuperLike: useCallback((id: string) => emit('super_like', id), [emit]),
     trackRewind: useCallback((id: string) => emit('rewind', id), [emit]),
+    trackShare: useCallback((id: string) => emit('share', id), [emit]),
     trackDetail: useCallback((id: string) => emit('detail', id), [emit]),
     emitView: useCallback(
       (id: string, dwellMs: number, position: number) => emit('view', id, { dwellMs, position }),

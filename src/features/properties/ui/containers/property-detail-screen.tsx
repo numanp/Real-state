@@ -1,13 +1,16 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { Share2 } from 'lucide-react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useFeedTracking } from '@/features/personalization/ui/use-feed-tracking';
 import { AmenitiesList } from '@/features/properties/ui/components/amenities-list';
 import { CostList } from '@/features/properties/ui/components/cost-list';
 import { FichaSection } from '@/features/properties/ui/components/ficha-section';
 import { PhotoGallery } from '@/features/properties/ui/components/photo-gallery';
 import { SpecsGrid } from '@/features/properties/ui/components/specs-grid';
 import { useProperty } from '@/features/properties/ui/hooks/use-property';
+import { shareProperty } from '@/features/properties/ui/lib/share-property';
 import { formatMoney } from '@/shared/ui/lib/format';
 import { Button } from '@/shared/ui/primitives/button';
 import { Text } from '@/shared/ui/primitives/text';
@@ -17,6 +20,7 @@ export function PropertyDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { property, loading } = useProperty(id);
+  const { trackShare } = useFeedTracking();
 
   if (loading) {
     return (
@@ -42,6 +46,12 @@ export function PropertyDetailScreen() {
     property.advertiser.type === 'owner'
       ? 'Dueño directo'
       : (property.advertiser.name ?? 'Inmobiliaria');
+
+  async function onShare() {
+    if (!property) return;
+    trackShare(property.id);
+    await shareProperty(property);
+  }
 
   return (
     <View className="flex-1 bg-background">
@@ -82,6 +92,12 @@ export function PropertyDetailScreen() {
 
       <View className="absolute left-3" style={{ top: insets.top + 8 }}>
         <Button label="‹ Volver" variant="secondary" size="sm" onPress={() => router.back()} />
+      </View>
+
+      <View className="absolute right-3" style={{ top: insets.top + 8 }}>
+        <Pressable onPress={onShare} hitSlop={8} className="rounded-full bg-secondary p-2.5">
+          <Share2 size={18} color="#18181b" />
+        </Pressable>
       </View>
 
       <View
