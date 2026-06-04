@@ -59,5 +59,26 @@ ok('user B CANNOT delete A listing', (bDel?.length ?? 0) === 0, `affected=${bDel
 const { data: mine } = await A.c.from('properties').select('id').eq('owner_id', A.id);
 ok('owner A sees their own listing', (mine?.length ?? 0) >= 1, `count=${mine?.length}`);
 
+// --- 0018: owner cannot tamper system-managed columns on their OWN row ---
+await A.c.from('properties').update({ like_count: 999 }).eq('id', pid).select('id');
+const { data: afterLike } = await A.c
+  .from('properties')
+  .select('like_count')
+  .eq('id', pid)
+  .single();
+ok('owner CANNOT inflate like_count (reverted by guard)', (afterLike?.like_count ?? -1) === 0, `like_count=${afterLike?.like_count}`);
+
+await A.c.from('properties').update({ published_at: '2999-01-01T00:00:00Z' }).eq('id', pid).select('id');
+const { data: afterPub } = await A.c.from('properties').select('published_at').eq('id', pid).single();
+ok(
+  'owner CANNOT pin published_at to the future (reverted)',
+  new Date(afterPub.published_at).getFullYear() < 2999,
+  afterPub?.published_at,
+);
+
+await A.c.from('properties').update({ title: 'Título editado' }).eq('id', pid).select('id');
+const { data: afterTitle } = await A.c.from('properties').select('title').eq('id', pid).single();
+ok('owner CAN still edit a legit column (title)', afterTitle?.title === 'Título editado', afterTitle?.title);
+
 console.log(`\n${fail === 0 ? 'ALL OK' : `${fail} FAILED`}`);
 process.exit(fail === 0 ? 0 : 1);
