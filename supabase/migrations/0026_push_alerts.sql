@@ -93,16 +93,37 @@ GRANT EXECUTE ON FUNCTION public.delete_push_token(text) TO authenticated;
 
 
 -- ---------------------------------------------------------------------
--- saved_searches.last_notified_at — the per-search watermark.
+-- saved_searches.last_notified_at — the per-search watermark. "new" = listings
+-- with published_at > last_notified_at. (Edge: organic listings get distinct
+-- published_at = now(); two listings sharing the exact microsecond on the
+-- watermark boundary could be missed — a keyset (published_at,id) cursor would
+-- close it. Near-zero risk here, noted as a follow-up.)
 -- ---------------------------------------------------------------------
 ALTER TABLE public.saved_searches
   ADD COLUMN IF NOT EXISTS last_notified_at timestamptz NOT NULL DEFAULT now();
+
+-- Reject malformed numeric filters at the source (the typed client never sends
+-- them, but a hand-crafted REST insert could). NOT VALID so it guards new
+-- writes without re-checking any legacy rows; the CASE-guarded predicate above
+-- is the in-engine backstop.
+ALTER TABLE public.saved_searches
+  DROP CONSTRAINT IF EXISTS saved_searches_filters_numeric;
+ALTER TABLE public.saved_searches
+  ADD CONSTRAINT saved_searches_filters_numeric CHECK (
+    (NULLIF(filters->>'minBedrooms', '')  IS NULL OR filters->>'minBedrooms'  ~ '^[0-9]+$')
+    AND (NULLIF(filters->>'maxPriceCents', '') IS NULL OR filters->>'maxPriceCents' ~ '^[0-9]+$')
+  ) NOT VALID;
 
 
 -- ---------------------------------------------------------------------
 -- saved_search_matches_property — pure predicate mirroring withFilters().
 -- 2-arg (NOT a 1-arg row fn) so PostgREST never exposes it as a column.
 -- ---------------------------------------------------------------------
+-- Numeric filters are CASE-guarded: a malformed value (e.g. {"minBedrooms":"x"})
+-- can NEVER reach the ::int / ::bigint cast, so a single bad saved search can
+-- never crash pending_push_alerts()/dispatch for everyone (a DoS). A bad value
+-- fails closed (matches nothing). currency is btrim'd because the column is
+-- char(3) (blank-padded) and a stray trailing space would otherwise never match.
 CREATE OR REPLACE FUNCTION public.saved_search_matches_property(p public.properties, f jsonb)
 RETURNS boolean
 LANGUAGE sql
@@ -110,11 +131,15 @@ IMMUTABLE
 SET search_path = ''
 AS $$
   SELECT
-    (NULLIF(f->>'operation', '')    IS NULL OR p.listing_type::text = f->>'operation')
-    AND (NULLIF(f->>'minBedrooms', '')  IS NULL OR p.bedrooms >= (f->>'minBedrooms')::int)
-    AND (NULLIF(f->>'city', '')         IS NULL OR p.city ILIKE '%' || (f->>'city') || '%')
-    AND (NULLIF(f->>'currency', '')     IS NULL OR p.currency = (f->>'currency'))
-    AND (NULLIF(f->>'maxPriceCents', '') IS NULL OR p.price_cents <= (f->>'maxPriceCents')::bigint);
+    (NULLIF(f->>'operation', '') IS NULL OR p.listing_type::text = f->>'operation')
+    AND (NULLIF(f->>'minBedrooms', '') IS NULL
+         OR CASE WHEN f->>'minBedrooms' ~ '^[0-9]+$'
+                 THEN p.bedrooms >= (f->>'minBedrooms')::int ELSE false END)
+    AND (NULLIF(f->>'city', '') IS NULL OR p.city ILIKE '%' || (f->>'city') || '%')
+    AND (NULLIF(f->>'currency', '') IS NULL OR p.currency = btrim(f->>'currency'))
+    AND (NULLIF(f->>'maxPriceCents', '') IS NULL
+         OR CASE WHEN f->>'maxPriceCents' ~ '^[0-9]+$'
+                 THEN p.price_cents <= (f->>'maxPriceCents')::bigint ELSE false END);
 $$;
 REVOKE ALL ON FUNCTION public.saved_search_matches_property(public.properties, jsonb) FROM public, anon, authenticated;
 

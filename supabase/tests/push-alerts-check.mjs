@@ -118,5 +118,13 @@ ok('a non-matching listing does not add to the alert', (await pendingFor(sid)) =
 await prop({ published_at: new Date(Date.now() - 2 * 86400_000).toISOString() }); // before watermark
 ok('a listing older than the watermark is not counted', (await pendingFor(sid)) === afterMatch);
 
+// --- DoS guard: a malformed numeric filter is rejected, engine stays intact --
+const bad = await A.c
+  .from('saved_searches')
+  .insert({ user_id: A.id, name: 'bad filter', filters: { minBedrooms: 'notanumber' } });
+ok('malformed numeric filter is rejected at insert (no cast-DoS)', !!bad.error, bad.error?.message);
+const intact = await svc.rpc('pending_push_alerts');
+ok('matching engine still runs after the rejected insert', !intact.error, intact.error?.message);
+
 console.log(`\n${fail === 0 ? 'ALL OK' : `${fail} FAILED`}`);
 process.exit(fail === 0 ? 0 : 1);

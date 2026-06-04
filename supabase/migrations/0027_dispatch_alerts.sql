@@ -13,52 +13,50 @@
 -- so a user with no token isn't silently skipped past their matches.
 -- =====================================================================
 
+-- Single statement, single snapshot: `pending` is MATERIALIZED so
+-- pending_push_alerts() runs exactly ONCE — building messages and advancing the
+-- watermark from the same view. (The earlier two-call version could advance a
+-- watermark past a listing published between the calls without notifying it.)
+-- `advanced` (data-modifying CTE) always runs; `sent` runs because the final
+-- SELECT references it. Only searches with a token (present in `batch`) advance.
 CREATE OR REPLACE FUNCTION public.dispatch_saved_search_alerts()
 RETURNS integer
-LANGUAGE plpgsql
+LANGUAGE sql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-DECLARE
-  v_msgs  jsonb;
-  v_count integer;
-  v_ids   uuid[];
-BEGIN
-  -- One message per (pending alert × the owner's device tokens). The JOIN means
-  -- only searches whose owner has a token contribute (and set v_ids).
-  SELECT jsonb_agg(jsonb_build_object(
-           'to',    t.token,
-           'title', 'Nuevas propiedades',
-           'body',  a.new_count::text || ' ' ||
-                    CASE WHEN a.new_count = 1 THEN 'nueva' ELSE 'nuevas' END ||
-                    ' en "' || a.name || '"',
-           'data',  jsonb_build_object('saved_search_id', a.saved_search_id))),
-         count(*),
-         array_agg(DISTINCT a.saved_search_id)
-    INTO v_msgs, v_count, v_ids
-  FROM public.pending_push_alerts() a
-  JOIN public.device_push_tokens t ON t.user_id = a.user_id;
-
-  IF COALESCE(v_count, 0) = 0 THEN
-    RETURN 0;
-  END IF;
-
-  -- Fire-and-forget to Expo. pg_net enqueues; invalid tokens fail out-of-band
-  -- (Expo returns per-message receipts we don't block on here).
-  PERFORM net.http_post(
-    url     := 'https://exp.host/--/api/v2/push/send',
-    body    := v_msgs,
-    headers := jsonb_build_object('Content-Type', 'application/json'));
-
-  -- Advance the watermark only for the searches we actually notified.
-  UPDATE public.saved_searches s
-    SET last_notified_at = a.watermark
-    FROM public.pending_push_alerts() a
-    WHERE s.id = a.saved_search_id
-      AND s.id = ANY (v_ids);
-
-  RETURN v_count;
-END;
+  WITH pending AS MATERIALIZED (
+    SELECT * FROM public.pending_push_alerts()
+  ),
+  batch AS (
+    SELECT a.saved_search_id, a.watermark,
+           jsonb_build_object(
+             'to',    t.token,
+             'title', 'Nuevas propiedades',
+             'body',  a.new_count::text || ' ' ||
+                      CASE WHEN a.new_count = 1 THEN 'nueva' ELSE 'nuevas' END ||
+                      ' en "' || a.name || '"',
+             'data',  jsonb_build_object('saved_search_id', a.saved_search_id)) AS m
+    FROM pending a
+    JOIN public.device_push_tokens t ON t.user_id = a.user_id
+  ),
+  sent AS (
+    SELECT net.http_post(
+             url     := 'https://exp.host/--/api/v2/push/send',
+             body    := (SELECT jsonb_agg(m) FROM batch),
+             headers := jsonb_build_object('Content-Type', 'application/json')) AS req
+    WHERE EXISTS (SELECT 1 FROM batch)
+  ),
+  advanced AS (
+    UPDATE public.saved_searches s
+      SET last_notified_at = b.watermark
+      FROM (SELECT DISTINCT saved_search_id, watermark FROM batch) b
+      WHERE s.id = b.saved_search_id
+      RETURNING 1
+  )
+  SELECT (COALESCE((SELECT count(*) FROM batch), 0)
+          + 0 * COALESCE((SELECT count(*) FROM sent), 0)
+          + 0 * COALESCE((SELECT count(*) FROM advanced), 0))::integer;
 $$;
 REVOKE ALL ON FUNCTION public.dispatch_saved_search_alerts() FROM public, anon, authenticated;
 
