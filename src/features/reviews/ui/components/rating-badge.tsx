@@ -2,9 +2,8 @@ import { Star } from 'lucide-react-native';
 import { Pressable } from 'react-native';
 
 import type { AgencyRating } from '@/features/reviews/domain/entities/review';
+import { AGENCY_GOLD as GOLD } from '@/features/reviews/ui/lib/colors';
 import { Text } from '@/shared/ui/primitives/text';
-
-const GOLD = '#e2b340';
 
 /** Compact agency rating chip shown next to the advertiser name. Tapping it
  *  opens the reviews sheet. Renders "Sin reseñas" when there are none. */

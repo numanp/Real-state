@@ -2,8 +2,8 @@ import { Star } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { MAX_RATING } from '@/features/reviews/domain/entities/review';
+import { AGENCY_GOLD as GOLD } from '@/features/reviews/ui/lib/colors';
 
-const GOLD = '#e2b340'; // matches the agency verification badge gold
 const STARS = Array.from({ length: MAX_RATING }, (_, i) => i + 1);
 
 /** Read-only star row. Fills to the nearest whole star of `value`. */

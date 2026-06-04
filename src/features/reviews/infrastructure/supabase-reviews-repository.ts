@@ -44,7 +44,7 @@ export class SupabaseReviewsRepository implements ReviewsRepository {
       p_comment: comment ?? null,
     });
     if (error) throw new Error(`reviews.submitReview: ${error.message}`);
-    // The RPC returns the full agency_reviews row; mapMyReview drops reviewer_id.
+    // The RPC returns ONLY safe columns (no reviewer_id) as a jsonb object.
     const mine = mapMyReview(data);
     if (!mine) throw new Error('reviews.submitReview: empty response');
     return mine;

@@ -55,10 +55,15 @@ if (!agencyId) {
   process.exit(1);
 }
 
-// --- agency_reviews is unreachable at the table level -----------------------
-const { data: leak, error: leakErr } = await anon.from('agency_reviews').select('reviewer_id').limit(1);
-ok('agency_reviews table is unreachable by anon (no leak of reviewer_id)',
-   !!leakErr || (leak?.length ?? 0) === 0, leakErr?.message ?? JSON.stringify(leak));
+// --- agency_reviews is unreachable at the GRANT layer (not just RLS rows) ----
+const { error: leakErr } = await anon.from('agency_reviews').select('reviewer_id').limit(1);
+ok('agency_reviews SELECT denied at the grant layer (anon)', !!leakErr, leakErr?.message);
+const insLeak = await anon.from('agency_reviews').insert({ agency_id: agencyId, rating: 5 });
+ok('agency_reviews INSERT denied at the grant layer (anon)', !!insLeak.error, insLeak.error?.message);
+
+// --- agencies are read-only at the grant layer ------------------------------
+const agencyWrite = await anon.from('agencies').update({ name: 'pwned' }).eq('id', agencyId);
+ok('agencies UPDATE denied at the grant layer (anon)', !!agencyWrite.error, agencyWrite.error?.message);
 
 // --- submit (free user) -----------------------------------------------------
 const before = await ratingOf(anon, agencyId);
@@ -68,6 +73,7 @@ const { data: rev, error: subErr } = await A.c.rpc('submit_agency_review', {
 });
 ok('free user can submit a review', !subErr && rev?.rating === 5, subErr?.message ?? JSON.stringify(rev));
 ok('comment is trimmed server-side', rev?.comment === 'Excelente atención', JSON.stringify(rev?.comment));
+ok('submit response omits reviewer_id', !!rev && !('reviewer_id' in rev), Object.keys(rev ?? {}).join(','));
 
 const afterInsert = await ratingOf(anon, agencyId);
 ok('review_count incremented by exactly 1',

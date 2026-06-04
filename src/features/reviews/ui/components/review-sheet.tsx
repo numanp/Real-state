@@ -27,6 +27,7 @@ export function ReviewSheet({ visible, agencyId, agencyName, onClose }: Props) {
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (visible) void load();
@@ -37,14 +38,18 @@ export function ReviewSheet({ visible, agencyId, agencyName, onClose }: Props) {
     if (visible) {
       setStars(myReview?.rating ?? 0);
       setComment(myReview?.comment ?? '');
+      setError(null);
     }
   }, [visible, myReview]);
 
   async function onSubmit() {
     if (stars < 1) return;
     setBusy(true);
+    setError(null);
     try {
       await submit(stars, comment.trim() || undefined);
+    } catch {
+      setError('No pudimos guardar tu reseña. Probá de nuevo.');
     } finally {
       setBusy(false);
     }
@@ -52,10 +57,13 @@ export function ReviewSheet({ visible, agencyId, agencyName, onClose }: Props) {
 
   async function onDelete() {
     setBusy(true);
+    setError(null);
     try {
       await remove();
       setStars(0);
       setComment('');
+    } catch {
+      setError('No pudimos eliminar tu reseña. Probá de nuevo.');
     } finally {
       setBusy(false);
     }
@@ -118,6 +126,7 @@ export function ReviewSheet({ visible, agencyId, agencyName, onClose }: Props) {
                 </Pressable>
               ) : null}
             </View>
+            {error ? <Text className="text-sm text-destructive">{error}</Text> : null}
           </View>
         ) : (
           <View className="gap-2 rounded-2xl border border-border bg-secondary p-3">

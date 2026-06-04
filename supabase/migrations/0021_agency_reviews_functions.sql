@@ -103,7 +103,7 @@ CREATE OR REPLACE FUNCTION public.submit_agency_review(
   p_rating    smallint,
   p_comment   text DEFAULT NULL
 )
-RETURNS public.agency_reviews
+RETURNS jsonb
 LANGUAGE plpgsql
 VOLATILE
 SECURITY DEFINER
@@ -133,7 +133,16 @@ BEGIN
         comment = EXCLUDED.comment
   RETURNING * INTO v_row;
 
-  RETURN v_row;
+  -- Return ONLY safe columns — NEVER reviewer_id (the table's whole point is
+  -- to not leak who reviewed; mirrors get_my_agency_review/get_agency_reviews).
+  RETURN jsonb_build_object(
+    'id',         v_row.id,
+    'agency_id',  v_row.agency_id,
+    'rating',     v_row.rating,
+    'comment',    v_row.comment,
+    'created_at', v_row.created_at,
+    'updated_at', v_row.updated_at
+  );
 END;
 $$;
 REVOKE ALL ON FUNCTION public.submit_agency_review(uuid, smallint, text) FROM public, anon;
