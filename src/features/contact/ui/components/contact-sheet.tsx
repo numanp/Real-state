@@ -70,12 +70,15 @@ function ChannelRow({
 
 function FullContact({ reveal }: { reveal: ContactReveal }) {
   const digits = reveal.whatsapp?.replace(/[^0-9]/g, '');
-  // Sanitize before building tel:/mailto: URIs — strip anything that could
-  // smuggle extra numbers (tel comma/pause syntax) or inject mailto headers
-  // (newlines → Bcc:). The reveal comes from the RPC but is never re-validated.
+  // Sanitize before building tel:/mailto: URIs — the reveal comes from the RPC
+  // but is never re-validated. Phone: keep only digits + leading '+' (drops tel
+  // comma/pause smuggling). Email: ALLOWLIST valid address chars, so a crafted
+  // value can't slip a newline/control byte into the mailto: header.
   const phone = reveal.phone?.replace(/[^0-9+]/g, '') || undefined;
   const email =
-    reveal.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reveal.email) ? reveal.email : undefined;
+    reveal.email && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(reveal.email)
+      ? reveal.email
+      : undefined;
   return (
     <View className="gap-2">
       {reveal.brokerName || reveal.agencyName ? (
