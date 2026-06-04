@@ -40,7 +40,28 @@ function mapRows(rows: EntRow[], tier: Tier): EntitlementSnapshot {
 }
 
 export class SupabaseEntitlementsRepository implements EntitlementsRepository {
-  async getMine(_userId: string): Promise<EntitlementSnapshot> {
+  // Short-lived dedup: screens that each call getMine() on mount (feed,
+  // membership) share one in-flight/recent result instead of refetching the
+  // same entitlements. Caches the PROMISE so concurrent callers also coalesce.
+  // Invalidated on writes (startUltimateTrial).
+  private static readonly TTL_MS = 10_000;
+  private cache: { userId: string; at: number; value: Promise<EntitlementSnapshot> } | null = null;
+
+  async getMine(userId: string): Promise<EntitlementSnapshot> {
+    const c = this.cache;
+    if (c && c.userId === userId && Date.now() - c.at < SupabaseEntitlementsRepository.TTL_MS) {
+      return c.value;
+    }
+    const value = this.fetchMine();
+    this.cache = { userId, at: Date.now(), value };
+    // Don't cache a rejection — drop it so the next call retries.
+    void value.catch(() => {
+      if (this.cache?.value === value) this.cache = null;
+    });
+    return value;
+  }
+
+  private async fetchMine(): Promise<EntitlementSnapshot> {
     const [{ data: rows, error }, { data: sub }] = await Promise.all([
       supabase.rpc('get_my_entitlements'),
       supabase.from('subscriptions').select('tier').maybeSingle(),
@@ -51,6 +72,7 @@ export class SupabaseEntitlementsRepository implements EntitlementsRepository {
   }
 
   async startUltimateTrial(fingerprint: string): Promise<TrialResult> {
+    this.cache = null; // entitlements are about to change — force a fresh getMine next
     const { data, error } = await supabase.rpc('start_ultimate_trial', {
       p_identity_fingerprint: fingerprint,
       p_device_fingerprint: fingerprint,
