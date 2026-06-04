@@ -3,9 +3,11 @@ import { Trash2 } from 'lucide-react-native';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useCompareStore } from '@/core/store/compare-store';
 import { useFeedModeStore } from '@/core/store/feed-mode-store';
 import { useFiltersStore } from '@/core/store/filters-store';
 import { useSessionStore } from '@/core/store/session-store';
+import { CompareBar } from '@/features/compare/ui/components/compare-bar';
 import { useLikedProperties } from '@/features/favorites/ui/hooks/use-liked-properties';
 import { useFolders } from '@/features/folders/ui/hooks/use-folders';
 import { useMyListings } from '@/features/listings/ui/hooks/use-my-listings';
@@ -27,6 +29,9 @@ export function SavedScreen() {
   const { searches, remove } = useSavedSearches();
   const { listings } = useMyListings();
   const { state: verification } = useVerification();
+  const compareIds = useCompareStore((s) => s.selectedIds);
+  const toggleCompare = useCompareStore((s) => s.toggle);
+  const clearCompare = useCompareStore((s) => s.clear);
   const setFilters = useFiltersStore((s) => s.setFilters);
   const setMode = useFeedModeStore((s) => s.setMode);
 
@@ -46,10 +51,14 @@ export function SavedScreen() {
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }}
-    >
+    <View className="flex-1 bg-background">
+      <ScrollView
+        className="flex-1 bg-background"
+        contentContainerStyle={{
+          paddingTop: insets.top + 12,
+          paddingBottom: insets.bottom + (compareIds.length > 0 ? 88 : 24),
+        }}
+      >
       <View className="flex-row items-center justify-between px-5 pb-2">
         <View className="flex-row items-center gap-2">
           <Text className="text-2xl font-bold">Guardados</Text>
@@ -83,7 +92,12 @@ export function SavedScreen() {
       ) : (
         <View className="flex-row flex-wrap px-3.5">
           {liked.map((p) => (
-            <PropertyMiniCard key={p.id} property={p} />
+            <PropertyMiniCard
+              key={p.id}
+              property={p}
+              selectedForCompare={compareIds.includes(p.id)}
+              onToggleCompare={() => toggleCompare(p.id)}
+            />
           ))}
         </View>
       )}
@@ -160,6 +174,15 @@ export function SavedScreen() {
           ))}
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+      {compareIds.length > 0 ? (
+        <CompareBar
+          count={compareIds.length}
+          onCompare={() => router.push('/compare')}
+          onClear={clearCompare}
+          bottomInset={insets.bottom}
+        />
+      ) : null}
+    </View>
   );
 }
