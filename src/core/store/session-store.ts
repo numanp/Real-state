@@ -11,11 +11,21 @@ interface SessionState {
   setReady: (isReady: boolean) => void;
 }
 
+/** Same user + same token → the same session, regardless of object identity. */
+function sameSession(a: Session | null, b: Session | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.user.id === b.user.id && a.accessToken === b.accessToken;
+}
+
 /** Synchronous client snapshot of the auth session (the server source of truth
  *  stays in Supabase). Guards/UI select from here without re-fetching. */
 export const useSessionStore = create<SessionState>((set) => ({
   session: null,
   isReady: false,
-  setSession: (session) => set({ session }),
+  // Idempotent: getSession() builds a NEW Session object on every screen mount,
+  // so without this guard the reference churns and every useEffect([session])
+  // (favorites/entitlements refetch) re-runs. Skip the update when equivalent.
+  setSession: (session) => set((s) => (sameSession(s.session, session) ? {} : { session })),
   setReady: (isReady) => set({ isReady }),
 }));
