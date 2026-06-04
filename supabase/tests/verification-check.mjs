@@ -82,6 +82,23 @@ ok('client CANNOT EXECUTE grant_badge (REVOKED)', !!g.error, g.error?.message ??
 const bf0 = await A.c.rpc('get_badges_for', { p_subject: A.id });
 ok('un-granted subject exposes no public badge', !bf0.error && (bf0.data?.length ?? -1) === 0);
 
+// --- read confidentiality (0017): granted_badges is RPC-only, no table read ---
+const leakAuth = await A.c.from('granted_badges').select('subject_id, provider_ref, method');
+ok(
+  'authenticated CANNOT read granted_badges directly (no table grant)',
+  !!leakAuth.error,
+  leakAuth.error?.message ?? `leaked ${leakAuth.data?.length} rows!`,
+);
+const leakAnon = await newClient().from('granted_badges').select('subject_id, provider_ref');
+ok(
+  'anon CANNOT read granted_badges directly (no provider_ref enumeration)',
+  !!leakAnon.error,
+  leakAnon.error?.message ?? `leaked ${leakAnon.data?.length} rows!`,
+);
+
+const kycMismatch = await A.c.rpc('start_kyc_verification', { p_badge_type: 'agency' });
+ok('person CANNOT open an agency KYC attempt', !!kycMismatch.error, kycMismatch.error?.message ?? 'no error!');
+
 // --- agency account ---------------------------------------------------
 const B = await signUp('agency');
 const rb = await B.c.rpc('request_badge', { p_badge_type: 'agency' });
