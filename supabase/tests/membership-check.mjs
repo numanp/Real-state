@@ -20,6 +20,12 @@ const show = (label, { data, error }) =>
   console.log(`\n${label}:`, error ? `ERROR ${error.message}` : JSON.stringify(data)?.slice(0, 700));
 
 show('get_my_entitlements (free)', await c.rpc('get_my_entitlements'));
-show('start_ultimate_trial', await c.rpc('start_ultimate_trial'));
+show(
+  'start_ultimate_trial',
+  await c.rpc('start_ultimate_trial', {
+    p_identity_fingerprint: `fp-${Date.now()}`,
+    p_device_fingerprint: `dev-${Date.now()}`,
+  }),
+);
 show('get_my_entitlements (after trial)', await c.rpc('get_my_entitlements'));
 show('tier_entitlements reference (public read)', await c.from('tier_entitlements').select('tier,entitlement_key,enabled,limit_int,is_unlimited,level_value').limit(60));
