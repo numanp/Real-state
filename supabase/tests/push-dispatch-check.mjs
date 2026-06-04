@@ -73,16 +73,22 @@ const pendingFor = async (id) => {
 
 const withTok = await savedSearchWithMatch('disp_tok', true);
 const noTok = await savedSearchWithMatch('disp_notok', false);
-await insertMatch(); // one new matching listing → both searches now pending
+await insertMatch(); // one new matching listing → would match both searches
+
+const watermarkOf = async (id) => {
+  const { data } = await svc.from('saved_searches').select('last_notified_at').eq('id', id).single();
+  return data?.last_notified_at;
+};
 
 ok('search WITH token is pending pre-dispatch', (await pendingFor(withTok.sid)) >= 1);
-ok('search WITHOUT token is pending pre-dispatch', (await pendingFor(noTok.sid)) >= 1);
+ok('token-less owner is excluded from pending_push_alerts (perf filter)', (await pendingFor(noTok.sid)) === 0);
 
+const noTokBefore = await watermarkOf(noTok.sid);
 const { data: count, error: dErr } = await svc.rpc('dispatch_saved_search_alerts');
 ok('dispatch runs and reports messages enqueued', !dErr && (count ?? 0) >= 1, dErr?.message ?? `count=${count}`);
 
 ok('search WITH token advanced (no longer pending)', (await pendingFor(withTok.sid)) === 0);
-ok('search WITHOUT token NOT advanced (still pending — no alert lost)', (await pendingFor(noTok.sid)) >= 1);
+ok('token-less search watermark NOT advanced (no alert lost)', (await watermarkOf(noTok.sid)) === noTokBefore);
 
 // A brand-new listing after dispatch re-arms the token'd search.
 await insertMatch();

@@ -180,6 +180,12 @@ AS $$
         OR (p.published_at = s.last_notified_at
             AND (s.last_notified_id IS NULL OR p.id > s.last_notified_id)))
    AND public.saved_search_matches_property(p, s.filters)
+  -- Perf: only searches whose owner has a registered push token. dispatch can't
+  -- notify the rest, so scanning them is wasted work — this is the main reducer
+  -- of the O(saved_searches × properties) join. (The remaining per-row city
+  -- ILIKE is non-sargable; if the token'd cohort grows large, denormalize the
+  -- filter fields into indexed columns + a LATERAL per search.)
+  WHERE EXISTS (SELECT 1 FROM public.device_push_tokens t WHERE t.user_id = s.user_id)
   GROUP BY s.id, s.user_id, s.name
   HAVING count(p.id) > 0;
 $$;

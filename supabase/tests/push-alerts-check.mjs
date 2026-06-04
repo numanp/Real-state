@@ -69,6 +69,9 @@ ok('owner delete removes the token', (await tokenUser(TOKEN_B)) === null);
 // --- matching engine: pending_push_alerts ----------------------------------
 // Saved searches are quota-gated (free=0); grant A a paid tier so it can save.
 await svc.rpc('dev_grant_entitlement', { p_user: A.id, p_tier: 'pro' });
+// pending_push_alerts only considers searches whose owner has a push token
+// (A's earlier token was reassigned to B above), so register a fresh one.
+await A.c.rpc('register_push_token', { p_token: `ExponentPushToken[Am_${Math.floor(Math.random() * 1e9)}]` });
 const CITY = `pushcity_${Math.floor(Math.random() * 1e9)}`;
 const { data: search, error: sErr } = await A.c
   .from('saved_searches')
