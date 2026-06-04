@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-
 import { container } from '@/core/di/container';
+import { useAsync } from '@/core/hooks/use-async';
 import { useInteractionsStore } from '@/core/store/interactions-store';
 import { useSessionStore } from '@/core/store/session-store';
 import type { PropertyDetail } from '@/features/properties/domain/entities/property-detail';
@@ -10,32 +9,14 @@ import type { PropertyDetail } from '@/features/properties/domain/entities/prope
 export function useLikedProperties() {
   const session = useSessionStore((s) => s.session);
   const likedIds = useInteractionsStore((s) => s.likedIds);
-  const [properties, setProperties] = useState<PropertyDetail[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!session) {
-      setProperties([]);
-      setLoading(false);
-      return;
-    }
-    let active = true;
-    setLoading(true);
-    void (async () => {
-      try {
-        const ids = await container.favorites.list(session.user.id);
-        const resolved = await container.getProperty.executeMany(ids);
-        if (active) setProperties(resolved);
-      } catch {
-        if (active) setProperties([]);
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [session, likedIds]);
-
-  return { properties, loading };
+  const { data, loading, error } = useAsync<PropertyDetail[]>(
+    async () => {
+      if (!session) return [];
+      const ids = await container.favorites.list(session.user.id);
+      return container.getProperty.executeMany(ids);
+    },
+    [session, likedIds],
+    { initial: [] },
+  );
+  return { properties: data ?? [], loading, error };
 }

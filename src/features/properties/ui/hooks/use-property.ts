@@ -1,28 +1,14 @@
-import { useEffect, useState } from 'react';
-
 import { container } from '@/core/di/container';
+import { useAsync } from '@/core/hooks/use-async';
 import type { PropertyDetail } from '@/features/properties/domain/entities/property-detail';
 
+/** Loads one property's full detail. On failure `loading` still resolves to
+ *  false (no infinite spinner) and `error` is set. */
 export function useProperty(id: string | undefined) {
-  const [property, setProperty] = useState<PropertyDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      return;
-    }
-    let active = true;
-    setLoading(true);
-    void container.getProperty.execute(id).then((result) => {
-      if (!active) return;
-      setProperty(result);
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [id]);
-
-  return { property, loading };
+  const { data: property, loading, error } = useAsync<PropertyDetail | null>(
+    () => container.getProperty.execute(id as string),
+    [id],
+    { enabled: !!id },
+  );
+  return { property, loading, error };
 }
