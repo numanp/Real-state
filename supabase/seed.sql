@@ -518,4 +518,22 @@ UPDATE public.properties SET price_cents = 158000000
 UPDATE public.property_costs SET amount_cents = 158000000
   WHERE property_id = 'b2222222-2222-2222-2222-222222222202'::uuid AND cost_type = 'sale_price';
 
+-- ---- agencies (normalized review target, 0020) — backfill from the
+--      denormalized listing_details.agency_name now that all rows exist.
+--      Mirrors the idempotent backfill in migration 0020 (which is a no-op
+--      on a fresh local DB because it runs before this seed). ----
+INSERT INTO public.agencies (name, logo_path)
+SELECT DISTINCT ON (lower(ld.agency_name)) ld.agency_name, ld.agency_logo_path
+FROM public.listing_details ld
+WHERE ld.agency_name IS NOT NULL
+ORDER BY lower(ld.agency_name), ld.agency_logo_path NULLS LAST
+ON CONFLICT (lower(name)) DO NOTHING;
+
+UPDATE public.listing_details ld
+  SET agency_id = a.id
+  FROM public.agencies a
+  WHERE ld.agency_id IS NULL
+    AND ld.agency_name IS NOT NULL
+    AND lower(a.name) = lower(ld.agency_name);
+
 END $seed$;
