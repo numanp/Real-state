@@ -64,6 +64,8 @@ interface Row {
   city: string | null;
   region: string | null;
   country: string | null;
+  latitude: number | null;
+  longitude: number | null;
   published_at: string | null;
   property_costs: {
     cost_type: string;
@@ -87,7 +89,7 @@ const SELECT = `
   id, title, description, listing_type, property_kind, price_cents, currency,
   area_total_sqm, area_covered_sqm, area_land_sqm, rooms, bedrooms, bathrooms,
   parking_spaces, age_years, orientation, floor_number, condition, locale,
-  city, region, country, published_at,
+  city, region, country, latitude, longitude, published_at,
   property_costs ( cost_type, amount_cents, currency, period, label ),
   property_terms ( is_furnished, pets_allowed ),
   listing_details ( advertiser_type, agency_name, agency_id ),
@@ -161,6 +163,8 @@ function toDetail(r: Row): PropertyDetail {
       city: r.city ?? '',
       region: r.region ?? undefined,
       country: r.country ?? undefined,
+      lat: r.latitude ?? undefined,
+      lng: r.longitude ?? undefined,
     },
     gallery: galleryFor(r.id),
     advertiser: {

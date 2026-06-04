@@ -83,6 +83,22 @@ const ROWS: Row[] = [
 const ORIENTATIONS = ['Norte', 'Sur', 'Este', 'Oeste', 'Noreste'];
 const CONDITIONS = ['A estrenar', 'Excelente', 'Muy bueno', 'Reciclado'];
 
+// Offline coordinates: city centers + a small deterministic jitter per index so
+// the map pins don't stack. Mirrors the real PostGIS lat/lng exposed in 0023.
+const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
+  'Buenos Aires': { lat: -34.6037, lng: -58.3816 },
+  'São Paulo': { lat: -23.5558, lng: -46.6396 },
+  'Rio de Janeiro': { lat: -22.9068, lng: -43.1729 },
+  Barueri: { lat: -23.5106, lng: -46.8761 },
+};
+
+function mockCoords(city: string, i: number): { lat?: number; lng?: number } {
+  const base = CITY_COORDS[city];
+  if (!base) return {};
+  const j = ((i % 7) - 3) * 0.004;
+  return { lat: base.lat + j, lng: base.lng - j };
+}
+
 export const MOCK_PROPERTIES: PropertyDetail[] = ROWS.map((r, i) => ({
   id: r.id,
   title: r.title,
@@ -103,7 +119,13 @@ export const MOCK_PROPERTIES: PropertyDetail[] = ROWS.map((r, i) => ({
   furnished: i % 3 === 0,
   petsAllowed: i % 2 === 0,
   amenities: amenities(r.market, 4 + (i % 3), 3 + (i % 2)),
-  location: { neighborhood: r.neighborhood, city: r.city, region: r.region, country: r.country },
+  location: {
+    neighborhood: r.neighborhood,
+    city: r.city,
+    region: r.region,
+    country: r.country,
+    ...mockCoords(r.city, i),
+  },
   gallery: gallery(r.seed),
   advertiser: {
     ...r.advertiser,

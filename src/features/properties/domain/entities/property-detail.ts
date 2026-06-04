@@ -43,6 +43,8 @@ export interface PropertyDetail {
     city: string;
     region?: string;
     country?: string;
+    lat?: number;
+    lng?: number;
   };
   gallery: string[];
   advertiser: { type: 'agency' | 'owner' | 'managed'; name?: string; agencyId?: string };

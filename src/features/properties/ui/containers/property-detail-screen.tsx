@@ -11,6 +11,7 @@ import { AmenitiesList } from '@/features/properties/ui/components/amenities-lis
 import { CostList } from '@/features/properties/ui/components/cost-list';
 import { FichaSection } from '@/features/properties/ui/components/ficha-section';
 import { PhotoGallery } from '@/features/properties/ui/components/photo-gallery';
+import { PropertyMiniMap } from '@/features/properties/ui/components/property-mini-map';
 import { SpecsGrid } from '@/features/properties/ui/components/specs-grid';
 import { useProperty } from '@/features/properties/ui/hooks/use-property';
 import { shareProperty } from '@/features/properties/ui/lib/share-property';
@@ -111,6 +112,22 @@ export function PropertyDetailScreen() {
           <FichaSection title="Descripción">
             <Text className="text-sm leading-5">{property.description}</Text>
           </FichaSection>
+          {property.location.lat != null && property.location.lng != null ? (
+            <FichaSection title="Ubicación">
+              <View className="gap-2">
+                <Text className="text-sm text-muted-foreground">
+                  {[property.location.neighborhood, property.location.city, property.location.region]
+                    .filter(Boolean)
+                    .join(', ')}
+                </Text>
+                <PropertyMiniMap
+                  latitude={property.location.lat}
+                  longitude={property.location.lng}
+                  title={property.title}
+                />
+              </View>
+            </FichaSection>
+          ) : null}
           <FichaSection title="Anunciante">
             <View className="gap-2">
               <Text className="text-sm">{advertiserLabel}</Text>
