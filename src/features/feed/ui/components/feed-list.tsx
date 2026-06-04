@@ -1,7 +1,8 @@
-import { FlashList } from '@shopify/flash-list';
-import { useCallback, useRef, useState } from 'react';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { type LayoutChangeEvent, View, type ViewToken } from 'react-native';
 
+import { useFeedControlStore } from '@/core/store/feed-control-store';
 import type { FeedItem } from '@/features/feed/domain/entities/feed-item';
 import { useFeedTracking } from '@/features/personalization/ui/use-feed-tracking';
 
@@ -13,28 +14,37 @@ interface Props {
 }
 
 /**
- * Recycling vertical pager. The card height MUST equal the list's real viewport
- * (measured via onLayout, NOT the window height) so each property snaps fully.
- * Viewability drives the `view` dwell signal (which card was on screen, how long).
+ * Recycling vertical pager. The card height equals the measured viewport (so
+ * each property snaps fully). Viewability drives the `view` dwell signal and the
+ * active index; a FlashList ref is exposed to the control store so the action
+ * rail can advance (pass/super-like) or rewind the feed.
  */
 export function FeedList({ items, onEndReached }: Props) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const { emitView } = useFeedTracking();
+  const listRef = useRef<FlashListRef<FeedItem>>(null);
 
-  // Keep the latest emitter reachable from the stable viewability callback.
   const emitViewRef = useRef(emitView);
   emitViewRef.current = emitView;
   const active = useRef<{ id: string; index: number; at: number } | null>(null);
+
+  useEffect(() => {
+    const { setScroller, setCount } = useFeedControlStore.getState();
+    setScroller((index) => listRef.current?.scrollToIndex({ index, animated: true }));
+    setCount(items.length);
+    return () => useFeedControlStore.getState().setScroller(null);
+  }, [items.length]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     setSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
   }, []);
 
-  // Stable refs — FlashList/FlatList forbid these from changing between renders.
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 80, minimumViewTime: 150 }).current;
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    const firstId = viewableItems[0]?.item?.id as string | undefined;
+    const first = viewableItems[0];
+    const firstId = first?.item?.id as string | undefined;
+    const firstIndex = first?.index ?? 0;
     const now = Date.now();
     const prev = active.current;
     if (prev && prev.id !== firstId) {
@@ -42,7 +52,8 @@ export function FeedList({ items, onEndReached }: Props) {
       active.current = null;
     }
     if (firstId && active.current?.id !== firstId) {
-      active.current = { id: firstId, index: viewableItems[0]?.index ?? 0, at: now };
+      active.current = { id: firstId, index: firstIndex, at: now };
+      useFeedControlStore.getState().setActiveIndex(firstIndex);
     }
   }).current;
 
@@ -57,6 +68,7 @@ export function FeedList({ items, onEndReached }: Props) {
     <View className="flex-1" onLayout={onLayout}>
       {size.height > 0 ? (
         <FlashList
+          ref={listRef}
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}

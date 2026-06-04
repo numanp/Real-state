@@ -1,6 +1,13 @@
-import { Bookmark, Heart } from 'lucide-react-native';
-import { useState } from 'react';
+import { Bookmark, Heart, RotateCcw, Star, X } from 'lucide-react-native';
+import { type ReactNode, useState } from 'react';
 import { Pressable, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { useCardActions } from '@/features/feed/ui/hooks/use-card-actions';
 import { SaveSheet } from '@/features/folders/ui/components/save-sheet';
@@ -11,33 +18,74 @@ interface Props {
   likes: number;
 }
 
-/** TikTok-style action rail (like + save) overlaid on a feed card. */
+function Action({
+  children,
+  label,
+  onPress,
+}: {
+  children: ReactNode;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} hitSlop={8} className="items-center gap-1">
+      {children}
+      <Text className="text-[11px] font-semibold text-white">{label}</Text>
+    </Pressable>
+  );
+}
+
+/** TikTok/Tinder-style action rail: like (animated), super-like, save, pass, rewind. */
 export function FeedActions({ propertyId, likes }: Props) {
-  const { isLiked, isSaved, requireAuth, toggleLike, markSaved } = useCardActions(propertyId);
+  const { isLiked, isSaved, requireAuth, toggleLike, markSaved, pass, superLike, rewind } =
+    useCardActions(propertyId);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  const scale = useSharedValue(1);
+  const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  function onLike() {
+    if (!isLiked) {
+      scale.value = withSequence(withTiming(1.3, { duration: 110 }), withSpring(1, { damping: 6 }));
+    }
+    void toggleLike();
+  }
 
   return (
     <>
-      <View className="absolute bottom-36 right-3 items-center gap-6">
-        <Pressable onPress={toggleLike} className="items-center gap-1" hitSlop={8}>
-          <Heart
-            size={36}
-            color={isLiked ? '#ef4444' : '#ffffff'}
-            fill={isLiked ? '#ef4444' : 'transparent'}
-          />
-          <Text className="text-xs font-semibold text-white">{likes + (isLiked ? 1 : 0)}</Text>
-        </Pressable>
-        <Pressable
+      <View className="absolute bottom-28 right-3 items-center gap-5">
+        <Action label={String(likes + (isLiked ? 1 : 0))} onPress={onLike}>
+          <Animated.View style={heartStyle}>
+            <Heart
+              size={36}
+              color={isLiked ? '#ef4444' : '#ffffff'}
+              fill={isLiked ? '#ef4444' : 'transparent'}
+            />
+          </Animated.View>
+        </Action>
+
+        <Action label="Super" onPress={() => void superLike()}>
+          <Star size={32} color="#facc15" fill={isLiked ? '#facc15' : 'transparent'} />
+        </Action>
+
+        <Action
+          label="Guardar"
           onPress={() => {
             if (requireAuth()) setSheetOpen(true);
           }}
-          className="items-center gap-1"
-          hitSlop={8}
         >
-          <Bookmark size={34} color="#ffffff" fill={isSaved ? '#ffffff' : 'transparent'} />
-          <Text className="text-xs font-semibold text-white">Guardar</Text>
-        </Pressable>
+          <Bookmark size={32} color="#ffffff" fill={isSaved ? '#ffffff' : 'transparent'} />
+        </Action>
+
+        <Action label="Pasar" onPress={pass}>
+          <X size={32} color="#ffffff" />
+        </Action>
+
+        <Action label="Volver" onPress={rewind}>
+          <RotateCcw size={26} color="#ffffff" />
+        </Action>
       </View>
+
       <SaveSheet
         visible={sheetOpen}
         propertyId={propertyId}
