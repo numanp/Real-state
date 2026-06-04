@@ -1,3 +1,4 @@
+import { parseFeedFilters } from '@/features/feed/domain/feed-filters';
 import type {
   FeedFilters,
   FeedPage,
@@ -20,7 +21,7 @@ export class GetFeedPage {
     return this.feed.getPage({
       cursor: query.cursor ?? null,
       pageSize,
-      filters: query.filters,
+      filters: parseFeedFilters(query.filters),
     });
   }
 
@@ -31,6 +32,6 @@ export class GetFeedPage {
 
   /** Count-only match total for a filter set (no rows fetched). */
   countMatches(filters?: FeedFilters): Promise<number> {
-    return this.feed.countMatches(filters);
+    return this.feed.countMatches(parseFeedFilters(filters));
   }
 }
