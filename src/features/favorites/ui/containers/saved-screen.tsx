@@ -12,6 +12,8 @@ import { useMyListings } from '@/features/listings/ui/hooks/use-my-listings';
 import { PropertyMiniCard } from '@/features/properties/ui/components/property-mini-card';
 import type { SavedSearchWithCount } from '@/features/saved-searches/ui/hooks/use-saved-searches';
 import { useSavedSearches } from '@/features/saved-searches/ui/hooks/use-saved-searches';
+import { VerifiedBadgeFor } from '@/features/verification/ui/components/verified-badge';
+import { useVerification } from '@/features/verification/ui/hooks/use-verification';
 import { formatMoney } from '@/shared/ui/lib/format';
 import { Button } from '@/shared/ui/primitives/button';
 import { Text } from '@/shared/ui/primitives/text';
@@ -24,6 +26,7 @@ export function SavedScreen() {
   const { folders } = useFolders();
   const { searches, remove } = useSavedSearches();
   const { listings } = useMyListings();
+  const { state: verification } = useVerification();
   const setFilters = useFiltersStore((s) => s.setFilters);
   const setMode = useFeedModeStore((s) => s.setMode);
 
@@ -48,7 +51,10 @@ export function SavedScreen() {
       contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }}
     >
       <View className="flex-row items-center justify-between px-5 pb-2">
-        <Text className="text-2xl font-bold">Guardados</Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="text-2xl font-bold">Guardados</Text>
+          <VerifiedBadgeFor badges={verification.badges} size={20} />
+        </View>
         <View className="flex-row gap-2">
           <Button
             label="✨ Premium"
@@ -60,8 +66,15 @@ export function SavedScreen() {
         </View>
       </View>
 
-      <View className="px-5 pb-1">
+      <View className="gap-2 px-5 pb-1">
         <Button label="＋ Publicar propiedad" onPress={() => router.push('/create-listing')} />
+        <Button
+          label={
+            verification.badges.length > 0 ? '✓ Cuenta verificada' : '🛡️ Verificar mi cuenta'
+          }
+          variant="secondary"
+          onPress={() => router.push('/verify')}
+        />
       </View>
 
       <Text className="px-5 pb-2 pt-3 text-base font-bold">Me gusta</Text>

@@ -23,6 +23,9 @@ import { FeedTracker } from '@/features/personalization/application/feed-tracker
 import { InMemoryFeedEventsRepository } from '@/features/personalization/infrastructure/in-memory-feed-events-repository';
 import { SupabaseFeedEventsRepository } from '@/features/personalization/infrastructure/supabase-feed-events-repository';
 import { GetProperty } from '@/features/properties/application/get-property';
+import { VerificationService } from '@/features/verification/application/verification-service';
+import { InMemoryVerificationRepository } from '@/features/verification/infrastructure/in-memory-verification-repository';
+import { SupabaseVerificationRepository } from '@/features/verification/infrastructure/supabase-verification-repository';
 import { SavedSearchesService } from '@/features/saved-searches/application/saved-searches-service';
 import { InMemorySavedSearchesRepository } from '@/features/saved-searches/infrastructure/in-memory-saved-searches-repository';
 import { SupabaseSavedSearchesRepository } from '@/features/saved-searches/infrastructure/supabase-saved-searches-repository';
@@ -60,6 +63,9 @@ const entitlementsRepository = useDb
 const listingsRepository = useDb
   ? new SupabaseListingsRepository()
   : new InMemoryListingsRepository();
+const verificationRepository = useDb
+  ? new SupabaseVerificationRepository()
+  : new InMemoryVerificationRepository();
 
 export const container = {
   getFeedPage: new GetFeedPage(feedRepository),
@@ -76,4 +82,5 @@ export const container = {
   savedSearches: new SavedSearchesService(savedSearchesRepository),
   entitlements: entitlementsRepository,
   listings: new CreateListingService(listingsRepository),
+  verification: new VerificationService(verificationRepository),
 } as const;
