@@ -8,9 +8,11 @@ import { useFiltersStore } from '@/core/store/filters-store';
 import { useSessionStore } from '@/core/store/session-store';
 import { useLikedProperties } from '@/features/favorites/ui/hooks/use-liked-properties';
 import { useFolders } from '@/features/folders/ui/hooks/use-folders';
+import { useMyListings } from '@/features/listings/ui/hooks/use-my-listings';
 import { PropertyMiniCard } from '@/features/properties/ui/components/property-mini-card';
 import type { SavedSearchWithCount } from '@/features/saved-searches/ui/hooks/use-saved-searches';
 import { useSavedSearches } from '@/features/saved-searches/ui/hooks/use-saved-searches';
+import { formatMoney } from '@/shared/ui/lib/format';
 import { Button } from '@/shared/ui/primitives/button';
 import { Text } from '@/shared/ui/primitives/text';
 
@@ -21,6 +23,7 @@ export function SavedScreen() {
   const { properties: liked } = useLikedProperties();
   const { folders } = useFolders();
   const { searches, remove } = useSavedSearches();
+  const { listings } = useMyListings();
   const setFilters = useFiltersStore((s) => s.setFilters);
   const setMode = useFeedModeStore((s) => s.setMode);
 
@@ -57,6 +60,10 @@ export function SavedScreen() {
         </View>
       </View>
 
+      <View className="px-5 pb-1">
+        <Button label="＋ Publicar propiedad" onPress={() => router.push('/create-listing')} />
+      </View>
+
       <Text className="px-5 pb-2 pt-3 text-base font-bold">Me gusta</Text>
       {liked.length === 0 ? (
         <Text className="px-5 text-muted-foreground">Todavía no likeaste ninguna propiedad.</Text>
@@ -67,6 +74,31 @@ export function SavedScreen() {
           ))}
         </View>
       )}
+
+      {listings.length > 0 ? (
+        <>
+          <Text className="px-5 pb-2 pt-5 text-base font-bold">Mis publicaciones</Text>
+          <View className="gap-2 px-5">
+            {listings.map((l) => (
+              <Pressable
+                key={l.id}
+                onPress={() => router.push(`/property/${l.id}`)}
+                className="flex-row items-center justify-between rounded-xl bg-card p-4"
+              >
+                <View className="flex-1 pr-3">
+                  <Text className="text-base font-medium" numberOfLines={1}>
+                    {l.title}
+                  </Text>
+                  <Text className="text-xs text-muted-foreground">
+                    {l.operation === 'buy' ? 'Venta' : 'Alquiler'} · {l.city}
+                  </Text>
+                </View>
+                <Text className="text-sm font-bold">{formatMoney(l.priceCents, l.currency)}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
 
       <Text className="px-5 pb-2 pt-5 text-base font-bold">Mis búsquedas</Text>
       {searches.length === 0 ? (
