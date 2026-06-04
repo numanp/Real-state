@@ -21,8 +21,8 @@ export function useFolderProperties(folderId: string | undefined) {
     void (async () => {
       try {
         const ids = await container.folders.listItems(session.user.id, folderId);
-        const resolved = await Promise.all(ids.map((id) => container.getProperty.execute(id)));
-        if (active) setProperties(resolved.filter((p): p is PropertyDetail => p !== null));
+        const resolved = await container.getProperty.executeMany(ids);
+        if (active) setProperties(resolved);
       } catch {
         if (active) setProperties([]);
       } finally {

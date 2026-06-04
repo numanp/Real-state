@@ -11,4 +11,8 @@ export class InMemoryPropertyRepository implements PropertyRepository {
   async getById(id: string): Promise<PropertyDetail | null> {
     return this.byId.get(id) ?? null;
   }
+
+  async getByIds(ids: string[]): Promise<PropertyDetail[]> {
+    return ids.map((id) => this.byId.get(id)).filter((p): p is PropertyDetail => p != null);
+  }
 }

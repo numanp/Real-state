@@ -22,11 +22,15 @@ export function useLikedProperties() {
     let active = true;
     setLoading(true);
     void (async () => {
-      const ids = await container.favorites.list(session.user.id);
-      const resolved = await Promise.all(ids.map((id) => container.getProperty.execute(id)));
-      if (!active) return;
-      setProperties(resolved.filter((p): p is PropertyDetail => p !== null));
-      setLoading(false);
+      try {
+        const ids = await container.favorites.list(session.user.id);
+        const resolved = await container.getProperty.executeMany(ids);
+        if (active) setProperties(resolved);
+      } catch {
+        if (active) setProperties([]);
+      } finally {
+        if (active) setLoading(false);
+      }
     })();
     return () => {
       active = false;

@@ -13,9 +13,9 @@ export function useComparison(ids: string[]) {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    void Promise.all(ids.map((id) => container.getProperty.execute(id))).then((res) => {
+    void container.getProperty.executeMany(ids).then((res) => {
       if (!active) return;
-      setProperties(res.filter((p): p is PropertyDetail => p != null));
+      setProperties(res);
       setLoading(false);
     });
     return () => {

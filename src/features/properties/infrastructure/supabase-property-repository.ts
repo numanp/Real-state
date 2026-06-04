@@ -103,6 +103,13 @@ export class SupabasePropertyRepository implements PropertyRepository {
     if (!data) return null;
     return toDetail(data as unknown as Row);
   }
+
+  async getByIds(ids: string[]): Promise<PropertyDetail[]> {
+    if (ids.length === 0) return [];
+    const { data, error } = await supabase.from('properties').select(SELECT).in('id', ids);
+    if (error) throw new Error(`property.getByIds: ${error.message}`);
+    return ((data ?? []) as unknown as Row[]).map(toDetail);
+  }
 }
 
 function toDetail(r: Row): PropertyDetail {
