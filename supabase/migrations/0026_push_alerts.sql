@@ -93,14 +93,16 @@ GRANT EXECUTE ON FUNCTION public.delete_push_token(text) TO authenticated;
 
 
 -- ---------------------------------------------------------------------
--- saved_searches.last_notified_at — the per-search watermark. "new" = listings
--- with published_at > last_notified_at. (Edge: organic listings get distinct
--- published_at = now(); two listings sharing the exact microsecond on the
--- watermark boundary could be missed — a keyset (published_at,id) cursor would
--- close it. Near-zero risk here, noted as a follow-up.)
+-- saved_searches push watermark — a KEYSET cursor (last_notified_at,
+-- last_notified_id) so two listings sharing the exact published_at microsecond
+-- on the boundary are never skipped (a plain `published_at >` would drop a tie
+-- published after the watermark advanced to that timestamp). last_notified_at
+-- defaults to now() → no back-spam; last_notified_id NULL = nothing notified yet.
 -- ---------------------------------------------------------------------
 ALTER TABLE public.saved_searches
   ADD COLUMN IF NOT EXISTS last_notified_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.saved_searches
+  ADD COLUMN IF NOT EXISTS last_notified_id uuid;
 
 -- Reject malformed numeric filters at the source (the typed client never sends
 -- them, but a hand-crafted REST insert could). NOT VALID so it guards new
@@ -157,7 +159,8 @@ RETURNS TABLE(
   user_id         uuid,
   name            text,
   new_count       integer,
-  watermark       timestamptz
+  watermark_at    timestamptz,
+  watermark_id    uuid
 )
 LANGUAGE sql
 STABLE
@@ -165,13 +168,17 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
   SELECT s.id, s.user_id, s.name,
-         count(p.id)::integer       AS new_count,
-         max(p.published_at)         AS watermark
+         count(p.id)::integer AS new_count,
+         max(p.published_at)  AS watermark_at,
+         -- id of the keyset-greatest matching row (pairs with max published_at).
+         (array_agg(p.id ORDER BY p.published_at DESC, p.id DESC))[1] AS watermark_id
   FROM public.saved_searches s
   JOIN public.properties p
     ON p.status = 'active'
    AND p.deleted_at IS NULL
-   AND p.published_at > s.last_notified_at
+   AND (p.published_at > s.last_notified_at
+        OR (p.published_at = s.last_notified_at
+            AND (s.last_notified_id IS NULL OR p.id > s.last_notified_id)))
    AND public.saved_search_matches_property(p, s.filters)
   GROUP BY s.id, s.user_id, s.name
   HAVING count(p.id) > 0;

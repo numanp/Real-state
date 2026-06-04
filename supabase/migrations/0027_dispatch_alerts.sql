@@ -29,7 +29,7 @@ AS $$
     SELECT * FROM public.pending_push_alerts()
   ),
   batch AS (
-    SELECT a.saved_search_id, a.watermark,
+    SELECT a.saved_search_id, a.watermark_at, a.watermark_id,
            jsonb_build_object(
              'to',    t.token,
              'title', 'Nuevas propiedades',
@@ -49,8 +49,9 @@ AS $$
   ),
   advanced AS (
     UPDATE public.saved_searches s
-      SET last_notified_at = b.watermark
-      FROM (SELECT DISTINCT saved_search_id, watermark FROM batch) b
+      SET last_notified_at = b.watermark_at,
+          last_notified_id = b.watermark_id
+      FROM (SELECT DISTINCT saved_search_id, watermark_at, watermark_id FROM batch) b
       WHERE s.id = b.saved_search_id
       RETURNING 1
   )
