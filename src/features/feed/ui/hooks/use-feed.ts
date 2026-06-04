@@ -51,16 +51,21 @@ export function useFeed() {
     inFlight.current = true;
     setIsLoading(true);
     try {
-      const page = await container.getFeedPage.execute({ pageSize: FOR_YOU_POOL, filters });
+      // Personalized deck: server-ranked from full signal history on the live
+      // backend (ranked_feed RPC); in-memory returns the raw pool. Either way we
+      // re-rank by session signals and drop already-acted items as a refinement —
+      // on the server path positives are already excluded, so this is a no-op
+      // that preserves the server order.
+      const pool = await container.getFeedPage.forYou(FOR_YOU_POOL);
       if (generation.current !== gen) return;
       const { likedIds, savedIds, passedIds } = useInteractionsStore.getState();
       const positives = new Set([...likedIds, ...savedIds]);
       const negatives = new Set(passedIds);
       const profile = buildTasteProfile(
-        page.items.filter((i) => positives.has(i.id)),
-        page.items.filter((i) => negatives.has(i.id)),
+        pool.filter((i) => positives.has(i.id)),
+        pool.filter((i) => negatives.has(i.id)),
       );
-      const candidates = page.items.filter((i) => !positives.has(i.id) && !negatives.has(i.id));
+      const candidates = pool.filter((i) => !positives.has(i.id) && !negatives.has(i.id));
       setItems(rankFeed(candidates, profile));
       cursor.current = null;
       exhausted.current = true; // finite ranked deck
@@ -70,7 +75,7 @@ export function useFeed() {
         setIsLoading(false);
       }
     }
-  }, [filters]);
+  }, []);
 
   useEffect(() => {
     generation.current += 1;

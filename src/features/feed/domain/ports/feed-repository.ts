@@ -39,4 +39,7 @@ export interface FeedQuery {
  */
 export interface FeedRepository {
   getPage(query: FeedQuery): Promise<FeedPage>;
+  /** A personalized candidate deck (server-ranked from the user's signal history
+   *  on the live backend; the raw pool in-memory, ranked client-side). */
+  getForYou(pageSize: number): Promise<FeedItem[]>;
 }

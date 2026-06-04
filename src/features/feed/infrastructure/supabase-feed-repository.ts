@@ -60,6 +60,14 @@ function toFeedItem(r: Row): FeedItem {
  * (published_at DESC, id DESC) — never OFFSET.
  */
 export class SupabaseFeedRepository implements FeedRepository {
+  async getForYou(pageSize: number): Promise<FeedItem[]> {
+    // Server-side ranking from the user's full feed_events history (ranked_feed
+    // RPC also excludes already-seen listings). Returns full property rows.
+    const { data, error } = await supabase.rpc('ranked_feed', { p_limit: pageSize });
+    if (error) throw new Error(`feed.getForYou: ${error.message}`);
+    return ((data ?? []) as Row[]).map(toFeedItem);
+  }
+
   async getPage({ cursor, pageSize, filters }: FeedQuery): Promise<FeedPage> {
     const size = pageSize ?? 8;
     let query = supabase.from('properties').select(COLUMNS);

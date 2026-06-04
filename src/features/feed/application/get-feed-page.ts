@@ -18,4 +18,9 @@ export class GetFeedPage {
       filters: query.filters,
     });
   }
+
+  /** Personalized "Para vos" candidate deck. */
+  forYou(pageSize: number) {
+    return this.feed.getForYou(pageSize);
+  }
 }

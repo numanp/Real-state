@@ -52,6 +52,12 @@ export class InMemoryFeedRepository implements FeedRepository {
     this.sorted = [...items].sort(byPublishedDesc);
   }
 
+  async getForYou(pageSize: number): Promise<FeedItem[]> {
+    // No persistent signals in-memory — return the pool; useFeed ranks it
+    // client-side from the interactions store.
+    return this.sorted.slice(0, pageSize);
+  }
+
   async getPage({ cursor, pageSize, filters }: FeedQuery): Promise<FeedPage> {
     const size = pageSize ?? FALLBACK_PAGE_SIZE;
     const matching = this.sorted.filter((item) => matchesFilters(item, filters));
