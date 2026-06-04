@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 
 import type { FeedItem } from '@/features/feed/domain/entities/feed-item';
 import { FeedActions } from '@/features/feed/ui/components/feed-actions';
+import { useFeedTracking } from '@/features/personalization/ui/use-feed-tracking';
 import { formatMoney } from '@/shared/ui/lib/format';
 import { Text } from '@/shared/ui/primitives/text';
 
@@ -29,16 +30,23 @@ function specsLabel(item: FeedItem): string {
 }
 
 /**
- * Presentational full-screen card. Tapping the media opens the ficha; the
- * info/scrim overlays are pointerEvents="none" and the action rail sits on top,
- * so only the rail and the media are interactive.
+ * Presentational full-screen card. Tapping the media opens the ficha (and emits
+ * a `detail` signal); the info/scrim overlays are pointerEvents="none" and the
+ * action rail sits on top, so only the rail and the media are interactive.
  */
 export const FeedCard = memo(function FeedCard({ item, height, width }: Props) {
   const router = useRouter();
+  const { trackDetail } = useFeedTracking();
 
   return (
     <View style={{ height, width }} className="bg-black">
-      <Pressable style={{ flex: 1 }} onPress={() => router.push(`/property/${item.id}`)}>
+      <Pressable
+        style={{ flex: 1 }}
+        onPress={() => {
+          trackDetail(item.id);
+          router.push(`/property/${item.id}`);
+        }}
+      >
         <Image
           source={item.primaryReel.posterUrl}
           placeholder={item.primaryReel.blurhash}

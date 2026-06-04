@@ -14,6 +14,9 @@ import { SupabaseFeedRepository } from '@/features/feed/infrastructure/supabase-
 import { FoldersService } from '@/features/folders/application/folders-service';
 import { InMemoryFoldersRepository } from '@/features/folders/infrastructure/in-memory-folders-repository';
 import { SupabaseFoldersRepository } from '@/features/folders/infrastructure/supabase-folders-repository';
+import { FeedTracker } from '@/features/personalization/application/feed-tracker';
+import { InMemoryFeedEventsRepository } from '@/features/personalization/infrastructure/in-memory-feed-events-repository';
+import { SupabaseFeedEventsRepository } from '@/features/personalization/infrastructure/supabase-feed-events-repository';
 import { GetProperty } from '@/features/properties/application/get-property';
 import { InMemoryPropertyRepository } from '@/features/properties/infrastructure/in-memory-property-repository';
 import { MOCK_PROPERTIES } from '@/features/properties/infrastructure/mock-property-data';
@@ -37,6 +40,9 @@ const favoritesRepository = useDb
   ? new SupabaseFavoritesRepository()
   : new InMemoryFavoritesRepository();
 const foldersRepository = useDb ? new SupabaseFoldersRepository() : new InMemoryFoldersRepository();
+const feedEventsRepository = useDb
+  ? new SupabaseFeedEventsRepository()
+  : new InMemoryFeedEventsRepository();
 
 export const container = {
   getFeedPage: new GetFeedPage(feedRepository),
@@ -49,4 +55,5 @@ export const container = {
   },
   favorites: new FavoritesService(favoritesRepository),
   folders: new FoldersService(foldersRepository),
+  feedTracker: new FeedTracker(feedEventsRepository),
 } as const;

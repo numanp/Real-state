@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { container } from '@/core/di/container';
@@ -10,6 +10,7 @@ import { useAuth } from '@/features/auth/ui/hooks/use-auth';
 import { FeedList } from '@/features/feed/ui/components/feed-list';
 import { FilterSheet } from '@/features/feed/ui/components/filter-sheet';
 import { useFeed } from '@/features/feed/ui/hooks/use-feed';
+import { useFeedTracking } from '@/features/personalization/ui/use-feed-tracking';
 import { Button } from '@/shared/ui/primitives/button';
 import { Text } from '@/shared/ui/primitives/text';
 
@@ -24,6 +25,7 @@ export function FeedScreen() {
   const setFilters = useFiltersStore((s) => s.setFilters);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { flush } = useFeedTracking();
   const [filterOpen, setFilterOpen] = useState(false);
 
   const activeFilters = countActiveFilters(filters);
@@ -42,6 +44,17 @@ export function FeedScreen() {
       active = false;
     };
   }, [session]);
+
+  // Flush buffered feed signals when the app backgrounds (catch the tail).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') void flush();
+    });
+    return () => {
+      sub.remove();
+      void flush();
+    };
+  }, [flush]);
 
   return (
     <View className="flex-1 bg-black">
