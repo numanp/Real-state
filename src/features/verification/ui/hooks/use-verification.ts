@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { container } from '@/core/di/container';
 import { useSessionStore } from '@/core/store/session-store';
@@ -12,13 +12,19 @@ export function useVerification() {
   const state = useVerificationStore((s) => s.state);
   const setState = useVerificationStore((s) => s.setState);
   const reset = useVerificationStore((s) => s.reset);
+  const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
     if (!session) {
       reset();
       return;
     }
-    setState(await container.verification.getMyState(session.user.id));
+    try {
+      setState(await container.verification.getMyState(session.user.id));
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+    }
   }, [session, setState, reset]);
 
   useEffect(() => {
@@ -34,5 +40,5 @@ export function useVerification() {
     [session, refresh],
   );
 
-  return { state, refresh, requestVerification, isSignedIn: Boolean(session) };
+  return { state, refresh, requestVerification, isSignedIn: Boolean(session), error };
 }

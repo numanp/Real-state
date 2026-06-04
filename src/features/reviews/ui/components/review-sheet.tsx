@@ -23,7 +23,16 @@ interface Props {
 export function ReviewSheet({ visible, agencyId, agencyName, onClose }: Props) {
   const router = useRouter();
   const session = useSessionStore((s) => s.session);
-  const { rating, reviews, myReview, loading, load, submit, remove } = useAgencyReviews(agencyId);
+  const {
+    rating,
+    reviews,
+    myReview,
+    loading,
+    error: loadError,
+    load,
+    submit,
+    remove,
+  } = useAgencyReviews(agencyId);
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
@@ -136,7 +145,9 @@ export function ReviewSheet({ visible, agencyId, agencyName, onClose }: Props) {
         )}
 
         <ScrollView className="max-h-64">
-          {loading && reviews.length === 0 ? (
+          {loadError && reviews.length === 0 ? (
+            <Text className="py-3 text-destructive">No se pudieron cargar las reseñas.</Text>
+          ) : loading && reviews.length === 0 ? (
             <Text className="py-3 text-muted-foreground">Cargando…</Text>
           ) : reviews.length === 0 ? (
             <Text className="py-3 text-muted-foreground">Sé el primero en reseñar.</Text>

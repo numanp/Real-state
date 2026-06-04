@@ -15,10 +15,12 @@ export function useAgencyReviews(agencyId: string | undefined) {
   const [reviews, setReviews] = useState<AgencyReview[]>([]);
   const [myReview, setMyReview] = useState<MyReview | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   const load = useCallback(async () => {
     if (!agencyId) return;
     setLoading(true);
+    setError(null);
     try {
       const [r, list, mine] = await Promise.all([
         container.reviews.getRating(agencyId),
@@ -28,6 +30,8 @@ export function useAgencyReviews(agencyId: string | undefined) {
       setRating(r);
       setReviews(list);
       setMyReview(mine);
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
     } finally {
       setLoading(false);
     }
@@ -48,5 +52,5 @@ export function useAgencyReviews(agencyId: string | undefined) {
     await load();
   }, [agencyId, load]);
 
-  return { rating, reviews, myReview, loading, load, submit, remove };
+  return { rating, reviews, myReview, loading, error, load, submit, remove };
 }
