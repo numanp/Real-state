@@ -167,26 +167,37 @@ STABLE
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT s.id, s.user_id, s.name,
-         count(p.id)::integer AS new_count,
-         max(p.published_at)  AS watermark_at,
-         -- id of the keyset-greatest matching row (pairs with max published_at).
-         (array_agg(p.id ORDER BY p.published_at DESC, p.id DESC))[1] AS watermark_id
+  -- LATERAL per search: each iteration's filter values are CONSTANTS, so the
+  -- inlined predicates can use indexes (city ILIKE → trigram GIN on properties.city;
+  -- published_at keyset → properties_feed_keyset) instead of the opaque function
+  -- call that forced a per-row scan. Numeric casts stay CASE-guarded (DoS-safe).
+  -- The EXISTS(token) filter keeps the search set to push-enabled owners.
+  SELECT s.id, s.user_id, s.name, m.new_count, m.watermark_at, m.watermark_id
   FROM public.saved_searches s
-  JOIN public.properties p
-    ON p.status = 'active'
-   AND p.deleted_at IS NULL
-   AND (p.published_at > s.last_notified_at
-        OR (p.published_at = s.last_notified_at
-            AND (s.last_notified_id IS NULL OR p.id > s.last_notified_id)))
-   AND public.saved_search_matches_property(p, s.filters)
-  -- Perf: only searches whose owner has a registered push token. dispatch can't
-  -- notify the rest, so scanning them is wasted work — this is the main reducer
-  -- of the O(saved_searches × properties) join. (The remaining per-row city
-  -- ILIKE is non-sargable; if the token'd cohort grows large, denormalize the
-  -- filter fields into indexed columns + a LATERAL per search.)
+  CROSS JOIN LATERAL (
+    SELECT count(p.id)::integer AS new_count,
+           max(p.published_at)  AS watermark_at,
+           (array_agg(p.id ORDER BY p.published_at DESC, p.id DESC))[1] AS watermark_id
+    FROM public.properties p
+    WHERE p.status = 'active'
+      AND p.deleted_at IS NULL
+      AND (p.published_at > s.last_notified_at
+           OR (p.published_at = s.last_notified_at
+               AND (s.last_notified_id IS NULL OR p.id > s.last_notified_id)))
+      AND (NULLIF(s.filters->>'operation', '') IS NULL
+           OR p.listing_type::text = s.filters->>'operation')
+      AND (NULLIF(s.filters->>'city', '') IS NULL
+           OR p.city ILIKE '%' || (s.filters->>'city') || '%')
+      AND (NULLIF(s.filters->>'currency', '') IS NULL
+           OR p.currency = btrim(s.filters->>'currency'))
+      AND (NULLIF(s.filters->>'minBedrooms', '') IS NULL
+           OR CASE WHEN s.filters->>'minBedrooms' ~ '^[0-9]+$'
+                   THEN p.bedrooms >= (s.filters->>'minBedrooms')::int ELSE false END)
+      AND (NULLIF(s.filters->>'maxPriceCents', '') IS NULL
+           OR CASE WHEN s.filters->>'maxPriceCents' ~ '^[0-9]+$'
+                   THEN p.price_cents <= (s.filters->>'maxPriceCents')::bigint ELSE false END)
+  ) m
   WHERE EXISTS (SELECT 1 FROM public.device_push_tokens t WHERE t.user_id = s.user_id)
-  GROUP BY s.id, s.user_id, s.name
-  HAVING count(p.id) > 0;
+    AND m.new_count > 0;
 $$;
 REVOKE ALL ON FUNCTION public.pending_push_alerts() FROM public, anon, authenticated;
