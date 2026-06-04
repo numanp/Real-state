@@ -4,6 +4,8 @@ import { SignOut } from '@/features/auth/application/sign-out';
 import { SignUpWithEmail } from '@/features/auth/application/sign-up-with-email';
 import { InMemoryAuthRepository } from '@/features/auth/infrastructure/in-memory-auth-repository';
 import { SupabaseAuthRepository } from '@/features/auth/infrastructure/supabase-auth-repository';
+import { InMemoryContactRepository } from '@/features/contact/infrastructure/in-memory-contact-repository';
+import { SupabaseContactRepository } from '@/features/contact/infrastructure/supabase-contact-repository';
 import { FavoritesService } from '@/features/favorites/application/favorites-service';
 import { InMemoryFavoritesRepository } from '@/features/favorites/infrastructure/in-memory-favorites-repository';
 import { SupabaseFavoritesRepository } from '@/features/favorites/infrastructure/supabase-favorites-repository';
@@ -66,6 +68,9 @@ const listingsRepository = useDb
 const verificationRepository = useDb
   ? new SupabaseVerificationRepository()
   : new InMemoryVerificationRepository();
+const contactRepository = useDb
+  ? new SupabaseContactRepository()
+  : new InMemoryContactRepository();
 
 export const container = {
   getFeedPage: new GetFeedPage(feedRepository),
@@ -83,4 +88,5 @@ export const container = {
   entitlements: entitlementsRepository,
   listings: new CreateListingService(listingsRepository),
   verification: new VerificationService(verificationRepository),
+  contact: contactRepository,
 } as const;

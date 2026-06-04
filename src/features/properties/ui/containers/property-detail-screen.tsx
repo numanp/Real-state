@@ -1,8 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Share2 } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ContactSheet } from '@/features/contact/ui/components/contact-sheet';
 import { useFeedTracking } from '@/features/personalization/ui/use-feed-tracking';
 import { AmenitiesList } from '@/features/properties/ui/components/amenities-list';
 import { CostList } from '@/features/properties/ui/components/cost-list';
@@ -21,6 +23,7 @@ export function PropertyDetailScreen() {
   const insets = useSafeAreaInsets();
   const { property, loading } = useProperty(id);
   const { trackShare } = useFeedTracking();
+  const [contactOpen, setContactOpen] = useState(false);
 
   if (loading) {
     return (
@@ -104,11 +107,16 @@ export function PropertyDetailScreen() {
         className="absolute inset-x-0 bottom-0 border-t border-border bg-background px-5 pt-3"
         style={{ paddingBottom: insets.bottom + 12 }}
       >
-        {/* Contact reveal is entitlement-gated server-side (get_listing_contact
-            RPC). Until the gated UI lands, this is a disabled placeholder rather
-            than a silent no-op dead-end. */}
-        <Button label="Contactar · próximamente" disabled onPress={() => {}} />
+        {/* Contact reveal is entitlement-gated server-side (get_listing_contact);
+            the sheet renders the level the server returns. */}
+        <Button label="Contactar" onPress={() => setContactOpen(true)} />
       </View>
+
+      <ContactSheet
+        visible={contactOpen}
+        propertyId={property.id}
+        onClose={() => setContactOpen(false)}
+      />
     </View>
   );
 }
