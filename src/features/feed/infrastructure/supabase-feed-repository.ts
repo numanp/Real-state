@@ -95,6 +95,14 @@ export class SupabaseFeedRepository implements FeedRepository {
 
     return { items, nextCursor };
   }
+
+  async countMatches(filters?: FeedFilters): Promise<number> {
+    let query = supabase.from('properties').select('id', { count: 'exact', head: true });
+    query = withFilters(query, filters);
+    const { count, error } = await query;
+    if (error) throw new Error(`feed.countMatches: ${error.message}`);
+    return count ?? 0;
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

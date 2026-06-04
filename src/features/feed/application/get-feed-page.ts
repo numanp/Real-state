@@ -1,4 +1,9 @@
-import type { FeedPage, FeedQuery, FeedRepository } from '@/features/feed/domain/ports/feed-repository';
+import type {
+  FeedFilters,
+  FeedPage,
+  FeedQuery,
+  FeedRepository,
+} from '@/features/feed/domain/ports/feed-repository';
 
 export const DEFAULT_FEED_PAGE_SIZE = 8;
 
@@ -22,5 +27,10 @@ export class GetFeedPage {
   /** Personalized "Para vos" candidate deck. */
   forYou(pageSize: number) {
     return this.feed.getForYou(pageSize);
+  }
+
+  /** Count-only match total for a filter set (no rows fetched). */
+  countMatches(filters?: FeedFilters): Promise<number> {
+    return this.feed.countMatches(filters);
   }
 }

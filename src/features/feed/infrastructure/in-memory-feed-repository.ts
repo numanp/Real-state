@@ -71,4 +71,8 @@ export class InMemoryFeedRepository implements FeedRepository {
 
     return { items, nextCursor };
   }
+
+  async countMatches(filters?: FeedFilters): Promise<number> {
+    return this.sorted.filter((item) => matchesFilters(item, filters)).length;
+  }
 }

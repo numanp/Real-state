@@ -31,8 +31,8 @@ export function useSavedSearches() {
     ]);
     const withCounts = await Promise.all(
       list.map(async (s) => {
-        const page = await container.getFeedPage.execute({ filters: s.filters, pageSize: 100 });
-        return { ...s, matchCount: page.items.length, newCount: counts[s.id] ?? 0 };
+        const matchCount = await container.getFeedPage.countMatches(s.filters);
+        return { ...s, matchCount, newCount: counts[s.id] ?? 0 };
       }),
     );
     setSearches(withCounts);

@@ -42,4 +42,7 @@ export interface FeedRepository {
   /** A personalized candidate deck (server-ranked from the user's signal history
    *  on the live backend; the raw pool in-memory, ranked client-side). */
   getForYou(pageSize: number): Promise<FeedItem[]>;
+  /** Count of listings matching the filters — head-only (no rows fetched). Used
+   *  by saved-search match counts instead of pulling a full page just to count. */
+  countMatches(filters?: FeedFilters): Promise<number>;
 }
