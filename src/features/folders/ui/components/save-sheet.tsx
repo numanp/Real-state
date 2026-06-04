@@ -5,6 +5,7 @@ import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { container } from '@/core/di/container';
 import { useSessionStore } from '@/core/store/session-store';
 import type { Folder } from '@/features/folders/domain/entities/folder';
+import { FolderError } from '@/features/folders/domain/ports/folders-repository';
 import { Button } from '@/shared/ui/primitives/button';
 import { Input } from '@/shared/ui/primitives/input';
 import { Text } from '@/shared/ui/primitives/text';
@@ -23,6 +24,7 @@ export function SaveSheet({ visible, propertyId, onClose, onSaved }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [newName, setNewName] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!visible || !session) return;
@@ -35,6 +37,7 @@ export function SaveSheet({ visible, propertyId, onClose, onSaved }: Props) {
       setFolders(list);
       setSelected(containing);
       setNewName('');
+      setError(null);
     });
     return () => {
       active = false;
@@ -49,6 +52,7 @@ export function SaveSheet({ visible, propertyId, onClose, onSaved }: Props) {
 
   async function save() {
     setBusy(true);
+    setError(null);
     try {
       const ids = [...selected];
       const name = newName.trim();
@@ -56,13 +60,17 @@ export function SaveSheet({ visible, propertyId, onClose, onSaved }: Props) {
         try {
           const created = await container.folders.create(userId, name);
           ids.push(created.id);
-        } catch {
-          // duplicate/invalid name — keep the existing selection, skip creating
+        } catch (e) {
+          // Surface the typed reason and keep the sheet open so the user can fix it.
+          setError(folderErrorMessage(e));
+          return;
         }
       }
       await container.folders.saveToFolders(userId, propertyId, ids);
       onSaved();
       onClose();
+    } catch {
+      setError('No pudimos guardar. Probá de nuevo.');
     } finally {
       setBusy(false);
     }
@@ -96,8 +104,23 @@ export function SaveSheet({ visible, propertyId, onClose, onSaved }: Props) {
           )}
         </ScrollView>
         <Input placeholder="Nueva carpeta…" value={newName} onChangeText={setNewName} />
+        {error ? <Text className="text-sm text-destructive">{error}</Text> : null}
         <Button label={busy ? 'Guardando…' : 'Guardar'} disabled={busy} onPress={save} />
       </View>
     </Modal>
   );
+}
+
+function folderErrorMessage(e: unknown): string {
+  if (e instanceof FolderError) {
+    switch (e.code) {
+      case 'duplicate_name':
+        return 'Ya tenés una carpeta con ese nombre.';
+      case 'invalid_name':
+        return 'Elegí un nombre válido (1–60 caracteres).';
+      case 'quota_exceeded':
+        return 'Llegaste al límite de carpetas de tu plan.';
+    }
+  }
+  return 'No pudimos crear la carpeta. Probá de nuevo.';
 }
