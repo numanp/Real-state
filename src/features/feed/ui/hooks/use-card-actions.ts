@@ -20,6 +20,7 @@ export function useCardActions(propertyId: string) {
   const isSaved = useInteractionsStore((s) => s.savedIds.includes(propertyId));
   const setLiked = useInteractionsStore((s) => s.setLiked);
   const setSaved = useInteractionsStore((s) => s.setSaved);
+  const setPassed = useInteractionsStore((s) => s.setPassed);
   const { trackLike, trackUnlike, trackSave, trackPass, trackSuperLike, trackRewind } =
     useFeedTracking();
 
@@ -49,8 +50,9 @@ export function useCardActions(propertyId: string) {
 
   const pass = useCallback(() => {
     trackPass(propertyId);
+    setPassed(propertyId);
     advanceBy(1);
-  }, [trackPass, propertyId, advanceBy]);
+  }, [trackPass, setPassed, propertyId, advanceBy]);
 
   const superLike = useCallback(async () => {
     if (!requireAuth() || !session) return;

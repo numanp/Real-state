@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { container } from '@/core/di/container';
@@ -10,7 +10,9 @@ import { useAuth } from '@/features/auth/ui/hooks/use-auth';
 import { FeedList } from '@/features/feed/ui/components/feed-list';
 import { FilterSheet } from '@/features/feed/ui/components/filter-sheet';
 import { useFeed } from '@/features/feed/ui/hooks/use-feed';
+import { useFeedModeStore } from '@/core/store/feed-mode-store';
 import { useFeedTracking } from '@/features/personalization/ui/use-feed-tracking';
+import { cn } from '@/shared/ui/lib/cn';
 import { Button } from '@/shared/ui/primitives/button';
 import { Text } from '@/shared/ui/primitives/text';
 
@@ -26,6 +28,8 @@ export function FeedScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { flush } = useFeedTracking();
+  const mode = useFeedModeStore((s) => s.mode);
+  const setMode = useFeedModeStore((s) => s.setMode);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const activeFilters = countActiveFilters(filters);
@@ -90,6 +94,28 @@ export function FeedScreen() {
           size="sm"
           onPress={() => (isAuthenticated ? void signOut() : router.push('/sign-in'))}
         />
+      </View>
+
+      <View
+        className="absolute left-0 right-0 items-center"
+        style={{ top: insets.top + 10 }}
+        pointerEvents="box-none"
+      >
+        <View className="flex-row rounded-full bg-black/40 p-1">
+          {(['recent', 'forYou'] as const).map((m) => (
+            <Pressable
+              key={m}
+              onPress={() => setMode(m)}
+              className={cn('rounded-full px-3 py-1.5', mode === m && 'bg-white')}
+            >
+              <Text
+                className={cn('text-xs font-semibold', mode === m ? 'text-black' : 'text-white')}
+              >
+                {m === 'recent' ? 'Recientes' : 'Para vos'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       <FilterSheet
