@@ -97,7 +97,7 @@ export function SavedScreen() {
               key={p.id}
               property={p}
               selectedForCompare={compareIds.includes(p.id)}
-              onToggleCompare={() => toggleCompare(p.id)}
+              onToggleCompare={toggleCompare}
             />
           ))}
         </View>

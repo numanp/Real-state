@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Check, Plus } from 'lucide-react-native';
+import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import type { PropertyDetail } from '@/features/properties/domain/entities/property-detail';
@@ -10,13 +11,19 @@ import { Text } from '@/shared/ui/primitives/text';
 
 interface Props {
   property: PropertyDetail;
-  /** When provided, an overlay chip toggles the property into the compare set. */
+  /** When provided, an overlay chip toggles the property into the compare set.
+   *  Takes the id so callers can pass a STABLE store action (keeps memo effective). */
   selectedForCompare?: boolean;
-  onToggleCompare?: () => void;
+  onToggleCompare?: (id: string) => void;
 }
 
-/** Compact 2-column property card for grids (favorites, folder contents). */
-export function PropertyMiniCard({ property, selectedForCompare, onToggleCompare }: Props) {
+/** Compact 2-column property card for grids (favorites, folder contents).
+ *  memo'd: with a stable onToggleCompare, only the toggled card re-renders. */
+export const PropertyMiniCard = memo(function PropertyMiniCard({
+  property,
+  selectedForCompare,
+  onToggleCompare,
+}: Props) {
   const router = useRouter();
   const price = `${formatMoney(property.price.amountCents, property.price.currency)}${
     property.price.period === 'monthly' ? '/mes' : ''
@@ -37,7 +44,7 @@ export function PropertyMiniCard({ property, selectedForCompare, onToggleCompare
           />
           {onToggleCompare ? (
             <Pressable
-              onPress={onToggleCompare}
+              onPress={() => onToggleCompare?.(property.id)}
               hitSlop={8}
               className={cn(
                 'absolute right-2 top-2 h-7 w-7 items-center justify-center rounded-full border-2',
@@ -66,4 +73,4 @@ export function PropertyMiniCard({ property, selectedForCompare, onToggleCompare
       </View>
     </Pressable>
   );
-}
+});
