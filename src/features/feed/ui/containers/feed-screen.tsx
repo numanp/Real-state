@@ -12,6 +12,7 @@ import { FilterSheet } from '@/features/feed/ui/components/filter-sheet';
 import { useFeed } from '@/features/feed/ui/hooks/use-feed';
 import { useFeedModeStore } from '@/core/store/feed-mode-store';
 import { useFeedTracking } from '@/features/personalization/ui/use-feed-tracking';
+import { useSavedSearches } from '@/features/saved-searches/ui/hooks/use-saved-searches';
 import { cn } from '@/shared/ui/lib/cn';
 import { Button } from '@/shared/ui/primitives/button';
 import { Text } from '@/shared/ui/primitives/text';
@@ -30,6 +31,7 @@ export function FeedScreen() {
   const { flush } = useFeedTracking();
   const mode = useFeedModeStore((s) => s.mode);
   const setMode = useFeedModeStore((s) => s.setMode);
+  const { create: createSearch } = useSavedSearches();
   const [filterOpen, setFilterOpen] = useState(false);
 
   const activeFilters = countActiveFilters(filters);
@@ -123,6 +125,9 @@ export function FeedScreen() {
         initial={filters}
         onApply={setFilters}
         onClose={() => setFilterOpen(false)}
+        onSaveSearch={(name, f) =>
+          isAuthenticated ? void createSearch(name, f) : router.push('/sign-in')
+        }
       />
     </View>
   );

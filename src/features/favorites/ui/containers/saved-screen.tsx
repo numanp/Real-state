@@ -1,11 +1,16 @@
 import { useRouter } from 'expo-router';
+import { Trash2 } from 'lucide-react-native';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useFeedModeStore } from '@/core/store/feed-mode-store';
+import { useFiltersStore } from '@/core/store/filters-store';
 import { useSessionStore } from '@/core/store/session-store';
 import { useLikedProperties } from '@/features/favorites/ui/hooks/use-liked-properties';
 import { useFolders } from '@/features/folders/ui/hooks/use-folders';
 import { PropertyMiniCard } from '@/features/properties/ui/components/property-mini-card';
+import type { SavedSearchWithCount } from '@/features/saved-searches/ui/hooks/use-saved-searches';
+import { useSavedSearches } from '@/features/saved-searches/ui/hooks/use-saved-searches';
 import { Button } from '@/shared/ui/primitives/button';
 import { Text } from '@/shared/ui/primitives/text';
 
@@ -15,6 +20,9 @@ export function SavedScreen() {
   const insets = useSafeAreaInsets();
   const { properties: liked } = useLikedProperties();
   const { folders } = useFolders();
+  const { searches, remove } = useSavedSearches();
+  const setFilters = useFiltersStore((s) => s.setFilters);
+  const setMode = useFeedModeStore((s) => s.setMode);
 
   if (!session) {
     return (
@@ -23,6 +31,12 @@ export function SavedScreen() {
         <Button label="Ingresar" onPress={() => router.push('/sign-in')} />
       </View>
     );
+  }
+
+  function applySearch(search: SavedSearchWithCount) {
+    setFilters(search.filters);
+    setMode('recent');
+    router.push('/');
   }
 
   return (
@@ -42,6 +56,32 @@ export function SavedScreen() {
         <View className="flex-row flex-wrap px-3.5">
           {liked.map((p) => (
             <PropertyMiniCard key={p.id} property={p} />
+          ))}
+        </View>
+      )}
+
+      <Text className="px-5 pb-2 pt-5 text-base font-bold">Mis búsquedas</Text>
+      {searches.length === 0 ? (
+        <Text className="px-5 text-muted-foreground">
+          Guardá una búsqueda desde los filtros del feed.
+        </Text>
+      ) : (
+        <View className="gap-2 px-5">
+          {searches.map((s) => (
+            <View
+              key={s.id}
+              className="flex-row items-center justify-between rounded-xl bg-card p-4"
+            >
+              <Pressable className="flex-1" onPress={() => applySearch(s)}>
+                <Text className="text-base font-medium">{s.name}</Text>
+                <Text className="text-xs text-muted-foreground">
+                  {s.matchCount} {s.matchCount === 1 ? 'resultado' : 'resultados'}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => void remove(s.id)} hitSlop={8}>
+                <Trash2 size={18} color="#a1a1aa" />
+              </Pressable>
+            </View>
           ))}
         </View>
       )}

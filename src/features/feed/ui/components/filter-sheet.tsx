@@ -12,6 +12,7 @@ interface Props {
   initial: FeedFilters;
   onApply: (filters: FeedFilters) => void;
   onClose: () => void;
+  onSaveSearch?: (name: string, filters: FeedFilters) => void;
 }
 
 const OPERATIONS: { label: string; value?: 'buy' | 'rent' }[] = [
@@ -36,7 +37,7 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   );
 }
 
-export function FilterSheet({ visible, initial, onApply, onClose }: Props) {
+export function FilterSheet({ visible, initial, onApply, onClose, onSaveSearch }: Props) {
   const [operation, setOperation] = useState<FeedFilters['operation']>(initial.operation);
   const [minBedrooms, setMinBedrooms] = useState<number | undefined>(initial.minBedrooms);
   const [city, setCity] = useState(initial.city ?? '');
@@ -44,6 +45,7 @@ export function FilterSheet({ visible, initial, onApply, onClose }: Props) {
   const [maxPrice, setMaxPrice] = useState(
     initial.maxPriceCents ? String(initial.maxPriceCents / 100) : '',
   );
+  const [searchName, setSearchName] = useState('');
 
   useEffect(() => {
     if (!visible) return;
@@ -52,9 +54,10 @@ export function FilterSheet({ visible, initial, onApply, onClose }: Props) {
     setCity(initial.city ?? '');
     setCurrency(initial.currency);
     setMaxPrice(initial.maxPriceCents ? String(initial.maxPriceCents / 100) : '');
+    setSearchName('');
   }, [visible, initial]);
 
-  function apply() {
+  function buildFilters(): FeedFilters {
     const next: FeedFilters = {};
     if (operation) next.operation = operation;
     if (minBedrooms) next.minBedrooms = minBedrooms;
@@ -64,9 +67,10 @@ export function FilterSheet({ visible, initial, onApply, onClose }: Props) {
     if (currency && maxPrice && !Number.isNaN(max) && max > 0) {
       next.maxPriceCents = Math.round(max * 100);
     }
-    onApply(next);
-    onClose();
+    return next;
   }
+
+  const hasFilters = Object.keys(buildFilters()).length > 0;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -129,7 +133,28 @@ export function FilterSheet({ visible, initial, onApply, onClose }: Props) {
           ) : null}
         </View>
 
-        <View className="flex-row gap-3 pt-2">
+        {onSaveSearch && hasFilters ? (
+          <View className="flex-row items-center gap-2 border-t border-border pt-3">
+            <Input
+              className="flex-1"
+              placeholder="Guardar como… (ej: 2 amb Palermo)"
+              value={searchName}
+              onChangeText={setSearchName}
+            />
+            <Button
+              label="Guardar"
+              variant="secondary"
+              size="sm"
+              disabled={!searchName.trim()}
+              onPress={() => {
+                onSaveSearch(searchName.trim(), buildFilters());
+                onClose();
+              }}
+            />
+          </View>
+        ) : null}
+
+        <View className="flex-row gap-3 pt-1">
           <Button
             label="Limpiar"
             variant="outline"
@@ -139,7 +164,14 @@ export function FilterSheet({ visible, initial, onApply, onClose }: Props) {
               onClose();
             }}
           />
-          <Button label="Aplicar" className="flex-1" onPress={apply} />
+          <Button
+            label="Aplicar"
+            className="flex-1"
+            onPress={() => {
+              onApply(buildFilters());
+              onClose();
+            }}
+          />
         </View>
       </View>
     </Modal>
