@@ -70,6 +70,12 @@ function ChannelRow({
 
 function FullContact({ reveal }: { reveal: ContactReveal }) {
   const digits = reveal.whatsapp?.replace(/[^0-9]/g, '');
+  // Sanitize before building tel:/mailto: URIs — strip anything that could
+  // smuggle extra numbers (tel comma/pause syntax) or inject mailto headers
+  // (newlines → Bcc:). The reveal comes from the RPC but is never re-validated.
+  const phone = reveal.phone?.replace(/[^0-9+]/g, '') || undefined;
+  const email =
+    reveal.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reveal.email) ? reveal.email : undefined;
   return (
     <View className="gap-2">
       {reveal.brokerName || reveal.agencyName ? (
@@ -84,18 +90,18 @@ function FullContact({ reveal }: { reveal: ContactReveal }) {
           onPress={() => void Linking.openURL(`https://wa.me/${digits}`)}
         />
       ) : null}
-      {reveal.phone ? (
+      {phone ? (
         <ChannelRow
           icon={<Phone size={20} color="#18181b" />}
-          label={reveal.phone}
-          onPress={() => void Linking.openURL(`tel:${reveal.phone}`)}
+          label={phone}
+          onPress={() => void Linking.openURL(`tel:${phone}`)}
         />
       ) : null}
-      {reveal.email ? (
+      {email ? (
         <ChannelRow
           icon={<Mail size={20} color="#18181b" />}
-          label={reveal.email}
-          onPress={() => void Linking.openURL(`mailto:${reveal.email}`)}
+          label={email}
+          onPress={() => void Linking.openURL(`mailto:${email}`)}
         />
       ) : null}
     </View>
