@@ -1483,62 +1483,19 @@ export type Database = {
       ranked_feed: {
         Args: { p_limit?: number }
         Returns: {
-          address_line: string | null
-          age_years: number | null
-          apt_credit: boolean
-          area_covered_sqm: number | null
-          area_land_sqm: number | null
-          area_semicovered_sqm: number | null
-          area_sqm: number | null
-          area_total_sqm: number | null
-          area_uncovered_sqm: number | null
-          bathrooms: number | null
-          bedrooms: number | null
-          city: string | null
-          condition: Database["public"]["Enums"]["property_condition"] | null
-          country: string | null
-          cover_image_path: string | null
-          created_at: string
+          area_sqm: number
+          bathrooms: number
+          bedrooms: number
+          city: string
           currency: string
-          deleted_at: string | null
-          description: string | null
-          disposition: Database["public"]["Enums"]["disposition"] | null
-          extra: Json | null
-          floor_number: number | null
-          half_bathrooms: number | null
           id: string
-          is_new_construction: boolean
-          is_under_construction: boolean
           like_count: number
           listing_type: Database["public"]["Enums"]["listing_type"]
-          locale: string
-          location: unknown
-          metro_nearby: boolean
-          orientation: Database["public"]["Enums"]["orientation"] | null
-          owner_id: string | null
-          parking_spaces: number
-          postal_code: string | null
           price_cents: number
-          property_kind: Database["public"]["Enums"]["property_kind"]
-          published_at: string | null
-          region: string | null
-          rooms: number | null
+          published_at: string
           save_count: number
-          search_tsv: unknown
-          status: Database["public"]["Enums"]["listing_status"]
-          suites: number | null
           title: string
-          total_floors: number | null
-          unit_levels: number | null
-          updated_at: string
-          year_built: number | null
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "properties"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       recompute_cover_image: {
         Args: { p_property_id: string }

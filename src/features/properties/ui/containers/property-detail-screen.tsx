@@ -104,7 +104,10 @@ export function PropertyDetailScreen() {
         className="absolute inset-x-0 bottom-0 border-t border-border bg-background px-5 pt-3"
         style={{ paddingBottom: insets.bottom + 12 }}
       >
-        <Button label="Contactar" onPress={() => {}} />
+        {/* Contact reveal is entitlement-gated server-side (get_listing_contact
+            RPC). Until the gated UI lands, this is a disabled placeholder rather
+            than a silent no-op dead-end. */}
+        <Button label="Contactar · próximamente" disabled onPress={() => {}} />
       </View>
     </View>
   );

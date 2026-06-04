@@ -53,6 +53,8 @@ export const FeedCard = memo(function FeedCard({ item, height, width }: Props) {
           recyclingKey={item.id}
           contentFit="cover"
           transition={200}
+          priority="high"
+          cachePolicy="memory-disk"
           style={{ flex: 1 }}
         />
       </Pressable>

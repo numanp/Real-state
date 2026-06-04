@@ -1,4 +1,5 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
+import { Image } from 'expo-image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type LayoutChangeEvent, View, type ViewToken } from 'react-native';
 
@@ -26,6 +27,10 @@ export function FeedList({ items, onEndReached }: Props) {
 
   const emitViewRef = useRef(emitView);
   emitViewRef.current = emitView;
+  // Kept current so the once-created viewability handler can read the latest list
+  // without being re-created (which would reset FlashList's viewability tracking).
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const active = useRef<{ id: string; index: number; at: number } | null>(null);
 
   useEffect(() => {
@@ -54,6 +59,11 @@ export function FeedList({ items, onEndReached }: Props) {
     if (firstId && active.current?.id !== firstId) {
       active.current = { id: firstId, index: firstIndex, at: now };
       useFeedControlStore.getState().setActiveIndex(firstIndex);
+      // Warm the next 3 posters so the next swipe paints instantly (no flash).
+      const upcoming = itemsRef.current
+        .slice(firstIndex + 1, firstIndex + 4)
+        .map((it) => it.primaryReel.posterUrl);
+      if (upcoming.length) void Image.prefetch(upcoming, { cachePolicy: 'memory-disk' });
     }
   }).current;
 
