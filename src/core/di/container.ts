@@ -25,6 +25,9 @@ import { FeedTracker } from '@/features/personalization/application/feed-tracker
 import { InMemoryFeedEventsRepository } from '@/features/personalization/infrastructure/in-memory-feed-events-repository';
 import { SupabaseFeedEventsRepository } from '@/features/personalization/infrastructure/supabase-feed-events-repository';
 import { GetProperty } from '@/features/properties/application/get-property';
+import { ReviewsService } from '@/features/reviews/application/reviews-service';
+import { InMemoryReviewsRepository } from '@/features/reviews/infrastructure/in-memory-reviews-repository';
+import { SupabaseReviewsRepository } from '@/features/reviews/infrastructure/supabase-reviews-repository';
 import { VerificationService } from '@/features/verification/application/verification-service';
 import { InMemoryVerificationRepository } from '@/features/verification/infrastructure/in-memory-verification-repository';
 import { SupabaseVerificationRepository } from '@/features/verification/infrastructure/supabase-verification-repository';
@@ -71,6 +74,9 @@ const verificationRepository = useDb
 const contactRepository = useDb
   ? new SupabaseContactRepository()
   : new InMemoryContactRepository();
+const reviewsRepository = useDb
+  ? new SupabaseReviewsRepository()
+  : new InMemoryReviewsRepository();
 
 export const container = {
   getFeedPage: new GetFeedPage(feedRepository),
@@ -89,4 +95,5 @@ export const container = {
   listings: new CreateListingService(listingsRepository),
   verification: new VerificationService(verificationRepository),
   contact: contactRepository,
+  reviews: new ReviewsService(reviewsRepository),
 } as const;
