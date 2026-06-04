@@ -76,6 +76,16 @@ ok(
   afterPub?.published_at,
 );
 
+// The depth-1 guard must NOT block the depth-2 counter trigger: a real like
+// still increments like_count (the invariant the guard's pg_trigger_depth gate exists for).
+await A.c.from('likes').insert({ user_id: A.id, property_id: pid });
+const { data: afterCounter } = await A.c.from('properties').select('like_count').eq('id', pid).single();
+ok(
+  'counter trigger STILL increments like_count despite the immutability guard',
+  (afterCounter?.like_count ?? -1) === 1,
+  `like_count=${afterCounter?.like_count}`,
+);
+
 await A.c.from('properties').update({ title: 'Título editado' }).eq('id', pid).select('id');
 const { data: afterTitle } = await A.c.from('properties').select('title').eq('id', pid).single();
 ok('owner CAN still edit a legit column (title)', afterTitle?.title === 'Título editado', afterTitle?.title);
