@@ -10,7 +10,8 @@ export function useLeadThread(leadId: string) {
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null); // load failures
+  const [replyError, setReplyError] = useState<Error | null>(null); // send failures
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -27,17 +28,20 @@ export function useLeadThread(leadId: string) {
   const reply = useCallback(
     async (body: string): Promise<boolean> => {
       setSending(true);
-      setError(null);
+      setReplyError(null);
+      let ok = false;
       try {
         await container.leads.replyToLead(leadId, body);
-        await load();
-        return true;
+        ok = true;
       } catch (e) {
-        setError(e instanceof Error ? e : new Error(String(e)));
-        return false;
-      } finally {
-        setSending(false);
+        setReplyError(e instanceof Error ? e : new Error(String(e)));
       }
+      // The message is already persisted on success — the refetch is
+      // best-effort and its failure surfaces via `error`, NOT as a send error
+      // (so we never show "send failed" for a message that actually sent).
+      if (ok) await load();
+      setSending(false);
+      return ok;
     },
     [leadId, load],
   );
@@ -50,5 +54,5 @@ export function useLeadThread(leadId: string) {
     }
   }, [leadId]);
 
-  return { messages, loading, sending, error, load, reply, markRead };
+  return { messages, loading, sending, error, replyError, load, reply, markRead };
 }

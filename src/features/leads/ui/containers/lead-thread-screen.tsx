@@ -17,7 +17,7 @@ export function LeadThreadScreen() {
   const session = useSessionStore((s) => s.session);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { messages, loading, sending, error, load, reply, markRead } = useLeadThread(id);
+  const { messages, loading, sending, error, replyError, load, reply, markRead } = useLeadThread(id);
   const [draft, setDraft] = useState('');
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export function LeadThreadScreen() {
         className="gap-1 border-t border-border bg-background px-3 pt-2"
         style={{ paddingBottom: insets.bottom + 8 }}
       >
-        {error && messages.length > 0 ? (
+        {replyError ? (
           <Text className="px-1 text-sm text-destructive">No se pudo enviar. Probá de nuevo.</Text>
         ) : null}
         <View className="flex-row items-end gap-2">

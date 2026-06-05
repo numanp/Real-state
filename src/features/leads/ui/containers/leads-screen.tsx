@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -41,9 +41,13 @@ export function LeadsScreen() {
   const { received, sent, loading, error, load } = useLeads();
   const [tab, setTab] = useState<'received' | 'sent'>('received');
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // Refetch on focus (not just mount) so a lead read/replied from the thread
+  // screen reflects on return — mirrors use-folders / use-saved-searches.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
 
   if (!session) {
     return (
