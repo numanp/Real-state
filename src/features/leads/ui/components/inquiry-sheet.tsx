@@ -14,14 +14,15 @@ interface Props {
   onClose: () => void;
 }
 
-const ERROR_TEXT: Record<LeadErrorCode, string> = {
+// Only the codes create_lead can actually raise; reply-only codes fall back.
+const ERROR_TEXT: Partial<Record<LeadErrorCode, string>> = {
   auth_required: 'Iniciá sesión para enviar una consulta.',
   invalid_message: 'Escribí un mensaje para el anunciante.',
   property_not_found: 'Este aviso ya no está disponible.',
   self_inquiry: 'No podés consultar tu propio aviso.',
   lead_rate_limited: 'Ya enviaste una consulta a este aviso hoy.',
-  unknown: 'No pudimos enviar tu consulta. Probá de nuevo.',
 };
+const FALLBACK_ERROR = 'No pudimos enviar tu consulta. Probá de nuevo.';
 
 /** Standalone inquiry sheet (Option A): a message field + submit, independent of
  *  the entitlement-gated ContactSheet. Parent-controlled via visible/onClose,
@@ -50,9 +51,7 @@ export function InquirySheet({ visible, propertyId, onClose }: Props) {
   }
 
   const errorText = error
-    ? error instanceof LeadError
-      ? ERROR_TEXT[error.code]
-      : ERROR_TEXT.unknown
+    ? (error instanceof LeadError ? ERROR_TEXT[error.code] : undefined) ?? FALLBACK_ERROR
     : null;
 
   return (

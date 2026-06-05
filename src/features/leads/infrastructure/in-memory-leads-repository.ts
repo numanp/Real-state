@@ -2,7 +2,9 @@ import type {
   CreatedLead,
   LeadStatus,
   ReceivedLead,
+  RepliedMessage,
   SentLead,
+  ThreadMessage,
 } from '@/features/leads/domain/entities/lead';
 import { LeadError, type LeadsRepository } from '@/features/leads/domain/ports/leads-repository';
 
@@ -14,6 +16,14 @@ interface StoredLead {
   message: string;
   status: LeadStatus;
   sentOn: string; // YYYY-MM-DD, UTC day — drives the per-(buyer,property)/day dedup
+  createdAt: string;
+}
+
+interface StoredMessage {
+  id: string;
+  leadId: string;
+  senderId: string;
+  body: string;
   createdAt: string;
 }
 
@@ -29,11 +39,17 @@ interface PropInfo {
  *  app's DI uses a fresh per-instance store; tests share one. */
 export interface LeadsStore {
   rows: StoredLead[];
+  messages: StoredMessage[];
   props: Map<string, PropInfo>;
   seq: { n: number };
 }
 
-export const createLeadsStore = (): LeadsStore => ({ rows: [], props: new Map(), seq: { n: 0 } });
+export const createLeadsStore = (): LeadsStore => ({
+  rows: [],
+  messages: [],
+  props: new Map(),
+  seq: { n: 0 },
+});
 
 /** Offline test double for the leads port. Models a SINGLE current user
  *  (`self`, default 'me') — the in-memory mirror of create/read being bound to
@@ -117,5 +133,46 @@ export class InMemoryLeadsRepository implements LeadsRepository {
       (r) => r.id === leadId && r.ownerId === this.self && r.status === 'new',
     );
     if (row) row.status = 'read';
+  }
+
+  async replyToLead(leadId: string, body: string): Promise<RepliedMessage> {
+    const lead = this.store.rows.find((r) => r.id === leadId);
+    if (!lead) throw new LeadError('lead_not_found');
+    if (!this.participates(lead)) throw new LeadError('not_participant');
+
+    const msg: StoredMessage = {
+      id: `lm-${++this.store.seq.n}`,
+      leadId,
+      senderId: this.self,
+      body,
+      createdAt: new Date().toISOString(),
+    };
+    this.store.messages.push(msg);
+    lead.status = 'replied';
+    return { id: msg.id, createdAt: msg.createdAt };
+  }
+
+  async getLeadThread(leadId: string, limit = 100, offset = 0): Promise<ThreadMessage[]> {
+    const lead = this.store.rows.find((r) => r.id === leadId);
+    if (!lead || !this.participates(lead)) return [];
+
+    const original: ThreadMessage = {
+      id: lead.id,
+      body: lead.message,
+      isMine: lead.buyerId === this.self,
+      createdAt: lead.createdAt,
+    };
+    const replies: ThreadMessage[] = this.store.messages
+      .filter((m) => m.leadId === leadId)
+      .map((m) => ({ id: m.id, body: m.body, isMine: m.senderId === this.self, createdAt: m.createdAt }));
+
+    return [original, ...replies]
+      .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
+      .slice(offset, offset + limit);
+  }
+
+  /** Caller is the lead's buyer or its (non-null) owner. */
+  private participates(lead: StoredLead): boolean {
+    return lead.buyerId === this.self || (lead.ownerId != null && lead.ownerId === this.self);
   }
 }

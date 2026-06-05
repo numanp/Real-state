@@ -78,6 +78,49 @@ describe('LeadsService', () => {
   });
 });
 
+describe('LeadsService — messaging (Phase 2)', () => {
+  it('lets a participant reply and builds the thread (original + replies, is_mine per side)', async () => {
+    const { buyer, owner } = setup();
+    const lead = await buyer.createLead(PROP, 'Hola, ¿disponible?');
+
+    await owner.replyToLead(lead.id, 'Sí, disponible');
+    await buyer.replyToLead(lead.id, '¿Mañana?');
+
+    const buyerThread = await buyer.getLeadThread(lead.id);
+    expect(buyerThread).toHaveLength(3);
+    expect(buyerThread.map((m) => m.isMine)).toEqual([true, false, true]);
+    expect(buyerThread[0].body).toBe('Hola, ¿disponible?');
+    expect(buyerThread.every((m) => !('senderId' in m))).toBe(true);
+
+    const ownerThread = await owner.getLeadThread(lead.id);
+    expect(ownerThread.map((m) => m.isMine)).toEqual([false, true, false]);
+  });
+
+  it("flips the lead to 'replied' on reply", async () => {
+    const { buyer, owner } = setup();
+    const lead = await buyer.createLead(PROP, 'Hola');
+    await owner.replyToLead(lead.id, 'Buenas');
+    const recv = await owner.getReceivedLeads();
+    expect(recv.find((r) => r.id === lead.id)?.status).toBe('replied');
+  });
+
+  it('rejects an empty reply before touching the repository', async () => {
+    const { buyer } = setup();
+    const lead = await buyer.createLead(PROP, 'Hola');
+    await expect(buyer.replyToLead(lead.id, '   ')).rejects.toMatchObject({ code: 'invalid_message' });
+  });
+
+  it('rejects a non-participant reply and gives them an empty thread', async () => {
+    const { store, buyer } = setup();
+    const lead = await buyer.createLead(PROP, 'Hola');
+    const stranger = new LeadsService(new InMemoryLeadsRepository('stranger', store));
+    await expect(stranger.replyToLead(lead.id, 'me cuelo')).rejects.toMatchObject({
+      code: 'not_participant',
+    });
+    expect(await stranger.getLeadThread(lead.id)).toHaveLength(0);
+  });
+});
+
 describe('leadErrorFromMessage', () => {
   it('maps a server P0001 message to a typed LeadError code', () => {
     expect(leadErrorFromMessage('leads.createLead: lead_rate_limited').code).toBe('lead_rate_limited');

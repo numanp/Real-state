@@ -40,6 +40,22 @@ export interface ReceivedLead {
   createdAt?: string;
 }
 
+/** One entry in a lead thread (get_lead_thread). `isMine` is relative to the
+ *  caller — the server never returns a sender id. The original inquiry is the
+ *  first entry. */
+export interface ThreadMessage {
+  id: string;
+  body: string;
+  isMine: boolean;
+  createdAt?: string;
+}
+
+/** The row returned by reply_to_lead. */
+export interface RepliedMessage {
+  id: string;
+  createdAt?: string;
+}
+
 // --- tolerant snake_case (RPC row) → camelCase (domain) readers --------------
 const asRecord = (json: unknown): Record<string, unknown> =>
   json && typeof json === 'object' ? (json as Record<string, unknown>) : {};
@@ -97,4 +113,26 @@ export function mapReceivedLead(json: unknown): ReceivedLead {
 
 export function mapReceivedLeads(rows: unknown): ReceivedLead[] {
   return Array.isArray(rows) ? rows.map(mapReceivedLead) : [];
+}
+
+export function mapThreadMessage(json: unknown): ThreadMessage {
+  const j = asRecord(json);
+  return {
+    id: str(j, 'id') ?? '',
+    body: str(j, 'body') ?? '',
+    isMine: j['is_mine'] === true,
+    createdAt: str(j, 'created_at'),
+  };
+}
+
+export function mapThread(rows: unknown): ThreadMessage[] {
+  return Array.isArray(rows) ? rows.map(mapThreadMessage) : [];
+}
+
+export function mapRepliedMessage(json: unknown): RepliedMessage | null {
+  if (json == null) return null;
+  const j = asRecord(json);
+  const id = str(j, 'id');
+  if (!id) return null;
+  return { id, createdAt: str(j, 'created_at') };
 }
