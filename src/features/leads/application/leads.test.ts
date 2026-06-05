@@ -121,6 +121,26 @@ describe('LeadsService — messaging (Phase 2)', () => {
   });
 });
 
+describe('LeadsService — close (lifecycle)', () => {
+  it('lets a participant close a lead, and a reply reopens it', async () => {
+    const { buyer, owner } = setup();
+    const lead = await buyer.createLead(PROP, 'Hola');
+
+    await owner.closeLead(lead.id);
+    expect((await owner.getReceivedLeads()).find((r) => r.id === lead.id)?.status).toBe('closed');
+
+    await buyer.replyToLead(lead.id, 'Sigo interesado');
+    expect((await owner.getReceivedLeads()).find((r) => r.id === lead.id)?.status).toBe('replied');
+  });
+
+  it('rejects a non-participant close', async () => {
+    const { store, buyer } = setup();
+    const lead = await buyer.createLead(PROP, 'Hola');
+    const stranger = new LeadsService(new InMemoryLeadsRepository('stranger', store));
+    await expect(stranger.closeLead(lead.id)).rejects.toMatchObject({ code: 'not_participant' });
+  });
+});
+
 describe('leadErrorFromMessage', () => {
   it('maps a server P0001 message to a typed LeadError code', () => {
     expect(leadErrorFromMessage('leads.createLead: lead_rate_limited').code).toBe('lead_rate_limited');

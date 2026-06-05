@@ -59,4 +59,6 @@ export interface LeadsRepository {
   replyToLead(leadId: string, body: string): Promise<RepliedMessage>;
   /** The lead's thread (original inquiry + replies), oldest-first. Participant-only. */
   getLeadThread(leadId: string, limit?: number, offset?: number): Promise<ThreadMessage[]>;
+  /** Archive a resolved lead (buyer or owner). A later reply reopens it. */
+  closeLead(leadId: string): Promise<void>;
 }

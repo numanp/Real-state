@@ -40,6 +40,10 @@ export function LeadsScreen() {
   const insets = useSafeAreaInsets();
   const { received, sent, loading, error, load } = useLeads();
   const [tab, setTab] = useState<'received' | 'sent'>('received');
+  const [showArchived, setShowArchived] = useState(false);
+  const inArchive = (s: LeadStatus) => (showArchived ? s === 'closed' : s !== 'closed');
+  const visibleReceived = received.filter((l) => inArchive(l.status));
+  const visibleSent = sent.filter((l) => inArchive(l.status));
 
   // Refetch on focus (not just mount) so a lead read/replied from the thread
   // screen reflects on return — mirrors use-folders / use-saved-searches.
@@ -69,25 +73,30 @@ export function LeadsScreen() {
           <Button label="‹ Volver" variant="secondary" size="sm" onPress={() => router.back()} />
         </View>
 
-        <View className="flex-row gap-2 px-5 pb-2">
-          <Chip label="Recibidas" active={tab === 'received'} onPress={() => setTab('received')} />
-          <Chip label="Enviadas" active={tab === 'sent'} onPress={() => setTab('sent')} />
+        <View className="flex-row items-center justify-between px-5 pb-2">
+          <View className="flex-row gap-2">
+            <Chip label="Recibidas" active={tab === 'received'} onPress={() => setTab('received')} />
+            <Chip label="Enviadas" active={tab === 'sent'} onPress={() => setTab('sent')} />
+          </View>
+          <Chip label="Archivadas" active={showArchived} onPress={() => setShowArchived((v) => !v)} />
         </View>
 
         {error ? (
           <Text className="px-5 pt-2 text-sm text-destructive">No pudimos cargar tus consultas.</Text>
-        ) : loading && (tab === 'received' ? received.length === 0 : sent.length === 0) ? (
-          // Only the INITIAL load blanks the list; a mark-read refetch keeps it
-          // visible (mirrors review-sheet's `loading && reviews.length === 0`).
+        ) : loading && (tab === 'received' ? visibleReceived.length === 0 : visibleSent.length === 0) ? (
+          // Only the INITIAL load blanks the list; a refetch keeps it visible
+          // (mirrors review-sheet's `loading && reviews.length === 0`).
           <Text className="px-5 pt-2 text-muted-foreground">Cargando…</Text>
         ) : tab === 'received' ? (
-          received.length === 0 ? (
+          visibleReceived.length === 0 ? (
             <Text className="px-5 pt-2 text-muted-foreground">
-              Todavía no recibiste consultas en tus avisos.
+              {showArchived
+                ? 'No tenés consultas archivadas.'
+                : 'Todavía no recibiste consultas en tus avisos.'}
             </Text>
           ) : (
             <View className="gap-2 px-5 pt-1">
-              {received.map((l) => (
+              {visibleReceived.map((l) => (
                 <Pressable
                   key={l.id}
                   onPress={() => router.push(`/lead/${l.id}`)}
@@ -114,11 +123,13 @@ export function LeadsScreen() {
               ))}
             </View>
           )
-        ) : sent.length === 0 ? (
-          <Text className="px-5 pt-2 text-muted-foreground">Todavía no enviaste consultas.</Text>
+        ) : visibleSent.length === 0 ? (
+          <Text className="px-5 pt-2 text-muted-foreground">
+            {showArchived ? 'No tenés consultas archivadas.' : 'Todavía no enviaste consultas.'}
+          </Text>
         ) : (
           <View className="gap-2 px-5 pt-1">
-            {sent.map((l) => (
+            {visibleSent.map((l) => (
               <Pressable
                 key={l.id}
                 onPress={() => router.push(`/lead/${l.id}`)}

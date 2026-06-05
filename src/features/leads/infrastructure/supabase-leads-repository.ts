@@ -73,4 +73,9 @@ export class SupabaseLeadsRepository implements LeadsRepository {
     if (error) throw new Error(`leads.getLeadThread: ${error.message}`);
     return mapThread(data);
   }
+
+  async closeLead(leadId: string): Promise<void> {
+    const { error } = await supabase.rpc('close_lead', { p_lead_id: leadId });
+    if (error) throw leadErrorFromMessage(error.message);
+  }
 }

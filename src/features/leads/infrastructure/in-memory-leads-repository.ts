@@ -171,6 +171,13 @@ export class InMemoryLeadsRepository implements LeadsRepository {
       .slice(offset, offset + limit);
   }
 
+  async closeLead(leadId: string): Promise<void> {
+    const lead = this.store.rows.find((r) => r.id === leadId);
+    if (!lead) throw new LeadError('lead_not_found');
+    if (!this.participates(lead)) throw new LeadError('not_participant');
+    lead.status = 'closed';
+  }
+
   /** Caller is the lead's buyer or its (non-null) owner. */
   private participates(lead: StoredLead): boolean {
     return lead.buyerId === this.self || (lead.ownerId != null && lead.ownerId === this.self);
