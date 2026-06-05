@@ -18,7 +18,7 @@ interface Props {
  *  (none → paywall, limited → masked, full → actionable channels). */
 export function ContactSheet({ visible, propertyId, onClose }: Props) {
   const router = useRouter();
-  const { reveal, loading, load } = useListingContact(propertyId);
+  const { reveal, loading, error, load } = useListingContact(propertyId);
 
   useEffect(() => {
     if (visible) void load();
@@ -34,8 +34,19 @@ export function ContactSheet({ visible, propertyId, onClose }: Props) {
       <Pressable className="flex-1 bg-black/50" onPress={onClose} />
       <View className="absolute inset-x-0 bottom-0 gap-3 rounded-t-3xl bg-background p-5 pb-10">
         <Text className="text-lg font-bold">Contacto</Text>
-        {loading || !reveal ? (
+        {loading ? (
           <Text className="py-4 text-muted-foreground">Cargando…</Text>
+        ) : error ? (
+          <View className="gap-3 py-2">
+            <Text className="text-sm text-destructive">No pudimos cargar el contacto.</Text>
+            <Button label="Reintentar" variant="secondary" onPress={() => void load()} />
+          </View>
+        ) : !reveal ? (
+          <Text className="py-4 text-muted-foreground">Cargando…</Text>
+        ) : reveal.rateLimited ? (
+          <Text className="py-4 text-sm">
+            Alcanzaste el límite diario de contactos. Probá de nuevo mañana.
+          </Text>
         ) : reveal.level === 'full' ? (
           <FullContact reveal={reveal} />
         ) : reveal.level === 'limited' ? (
