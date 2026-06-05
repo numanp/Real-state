@@ -36,4 +36,12 @@ describe('mapReveal', () => {
     expect(mapReveal(null).level).toBe('none');
     expect(mapReveal({}).level).toBe('none');
   });
+
+  it('maps the rate-limited reveal — flag set, no PII exposed', () => {
+    const r = mapReveal({ level: 'full', rate_limited: true });
+    expect(r.level).toBe('full');
+    expect(r.rateLimited).toBe(true);
+    expect(r.phone).toBeUndefined();
+    expect(r.whatsapp).toBeUndefined();
+  });
 });

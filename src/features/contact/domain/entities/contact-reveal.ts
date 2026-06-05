@@ -18,6 +18,7 @@ export interface ContactReveal {
   contactFormEnabled?: boolean;
   agentPerfSummary?: string;
   upgradeRequired?: boolean; // none only
+  rateLimited?: boolean; // daily contact-reveal cap reached — no PII in this payload (0033)
 }
 
 /** Maps the get_listing_contact jsonb (snake_case, null-stripped) to the domain
@@ -40,5 +41,6 @@ export function mapReveal(json: Record<string, unknown> | null | undefined): Con
     contactFormEnabled: bool('contact_form_enabled'),
     agentPerfSummary: str('agent_perf_summary'),
     upgradeRequired: bool('upgrade_required'),
+    rateLimited: bool('rate_limited'),
   };
 }
