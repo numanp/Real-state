@@ -18,6 +18,8 @@ export interface ReelMedia {
   durationMs?: number;
   /** width/height ratio (e.g. 0.5625 = 9:16). Required for CLS-free layout. */
   aspectRatio?: number;
+  /** Short author caption shown over the reel (optional). */
+  caption?: string;
 }
 
 export interface FeedItemPrice {

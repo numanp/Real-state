@@ -84,9 +84,19 @@ describe('rowToFeedItem — video reel', () => {
     expect(item.primaryReel.aspectRatio).toBe(0.5625);
   });
 
+  it('sets caption from caption', () => {
+    const item = rowToFeedItem(makeVideoRow());
+    expect(item.primaryReel.caption).toBe('Luminoso penthouse con terraza');
+  });
+
   it('does NOT include null poster when poster_path is null', () => {
     const item = rowToFeedItem(makeVideoRow({ poster_path: null }));
     expect(item.primaryReel.posterUrl).toBeUndefined();
+  });
+
+  it('does NOT include null caption when caption is null', () => {
+    const item = rowToFeedItem(makeVideoRow({ caption: null }));
+    expect(item.primaryReel.caption).toBeUndefined();
   });
 });
 

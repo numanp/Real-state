@@ -48,6 +48,7 @@ export function rowToFeedItem(r: FeedRow): FeedItem {
     ...(r.thumbnail_blurhash != null && { blurhash: r.thumbnail_blurhash }),
     ...(r.duration_ms != null && { durationMs: r.duration_ms }),
     aspectRatio: r.aspect_ratio,
+    ...(r.caption != null && { caption: r.caption }),
   };
 
   return {
