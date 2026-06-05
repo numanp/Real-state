@@ -30,6 +30,17 @@ export function FolderDetailScreen() {
 
   const canManage = !!folder && !folder.isDefault;
 
+  // Folders are per-user (RLS-protected). Without this an unauthenticated deep
+  // link to /folders/[id] showed an empty folder instead of an auth prompt.
+  if (!session) {
+    return (
+      <View className="flex-1 items-center justify-center gap-3 bg-background px-6">
+        <Text className="text-lg font-bold">Ingresá para ver tus carpetas</Text>
+        <Button label="Ingresar" onPress={() => router.push('/sign-in')} />
+      </View>
+    );
+  }
+
   function openManage() {
     setName(folder?.name ?? '');
     setError(null);
