@@ -72,7 +72,9 @@ export function LeadsScreen() {
 
         {error ? (
           <Text className="px-5 pt-2 text-sm text-destructive">No pudimos cargar tus consultas.</Text>
-        ) : loading ? (
+        ) : loading && (tab === 'received' ? received.length === 0 : sent.length === 0) ? (
+          // Only the INITIAL load blanks the list; a mark-read refetch keeps it
+          // visible (mirrors review-sheet's `loading && reviews.length === 0`).
           <Text className="px-5 pt-2 text-muted-foreground">Cargando…</Text>
         ) : tab === 'received' ? (
           received.length === 0 ? (

@@ -26,5 +26,7 @@ export function useSendLead(propertyId: string) {
     [propertyId],
   );
 
-  return { send, loading, error };
+  const reset = useCallback(() => setError(null), []);
+
+  return { send, loading, error, reset };
 }

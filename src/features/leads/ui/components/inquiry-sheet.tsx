@@ -27,17 +27,20 @@ const ERROR_TEXT: Record<LeadErrorCode, string> = {
  *  the entitlement-gated ContactSheet. Parent-controlled via visible/onClose,
  *  mirroring ReviewSheet/ContactSheet. */
 export function InquirySheet({ visible, propertyId, onClose }: Props) {
-  const { send, loading, error } = useSendLead(propertyId);
+  const { send, loading, error, reset } = useSendLead(propertyId);
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState(false);
 
-  // Reset the form each time the sheet opens.
+  // Reset the form AND the hook error each time the sheet opens — the sheet is
+  // always mounted (toggled via `visible`), so without this a prior error would
+  // render on a fresh, untouched form when reopened.
   useEffect(() => {
     if (visible) {
       setMessage('');
       setSent(false);
+      reset();
     }
-  }, [visible]);
+  }, [visible, reset]);
 
   async function onSubmit() {
     const text = message.trim();
