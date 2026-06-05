@@ -12,16 +12,24 @@ export function SignUpScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(email: string, password: string) {
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       await signUp(email, password);
       router.replace('/');
     } catch (e) {
-      setError(e instanceof AuthError ? e.message : 'Algo salió mal. Probá de nuevo.');
+      // Email confirmation pending is a SUCCESS path (account created), not an
+      // error — show it as a friendly notice instead of a red error.
+      if (e instanceof AuthError && e.code === 'confirmation_required') {
+        setNotice(e.message);
+      } else {
+        setError(e instanceof AuthError ? e.message : 'Algo salió mal. Probá de nuevo.');
+      }
     } finally {
       setBusy(false);
     }
@@ -35,6 +43,7 @@ export function SignUpScreen() {
           <Text className="text-muted-foreground">Gratis. Empezá a guardar lo que te gusta.</Text>
         </View>
         <AuthForm mode="signup" busy={busy} error={error} onSubmit={onSubmit} />
+        {notice ? <Text className="text-sm font-medium text-primary">{notice}</Text> : null}
         <View className="flex-row gap-1">
           <Text className="text-muted-foreground">¿Ya tenés cuenta?</Text>
           <Link href="/sign-in">

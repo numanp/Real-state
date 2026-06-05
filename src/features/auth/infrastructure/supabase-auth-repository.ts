@@ -21,13 +21,20 @@ function toSession(s: SbSession | null): Session | null {
 export class SupabaseAuthRepository implements AuthRepository {
   async signUpWithEmail(email: string, password: string): Promise<Session> {
     const { data, error } = await supabase.auth.signUp({ email, password });
+    // Generic on purpose — NO "email already registered" distinction. With
+    // enable_confirmations on, GoTrue obfuscates an existing-email signup, and we
+    // never branch the error message, so signup can't enumerate accounts (A07).
     if (error) {
-      const taken = /registered|already/i.test(error.message);
-      throw new AuthError(taken ? 'email_taken' : 'invalid_input', error.message);
+      throw new AuthError('invalid_input', error.message);
     }
     const session = toSession(data.session);
     if (!session) {
-      throw new AuthError('invalid_input', 'Revisá tu email para confirmar la cuenta.');
+      // No session yet → email confirmation is pending. Distinct code so the UI
+      // shows a friendly "check your inbox" notice instead of a red error.
+      throw new AuthError(
+        'confirmation_required',
+        'Te enviamos un email para confirmar tu cuenta. Revisá tu bandeja.',
+      );
     }
     return session;
   }

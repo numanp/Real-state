@@ -2,7 +2,11 @@ import type { Session } from '@/features/auth/domain/entities/auth-user';
 
 export type OAuthProvider = 'google' | 'apple';
 
-export type AuthErrorCode = 'invalid_input' | 'invalid_credentials' | 'email_taken';
+export type AuthErrorCode =
+  | 'invalid_input'
+  | 'invalid_credentials'
+  | 'email_taken'
+  | 'confirmation_required';
 
 /** Domain error. Login failures use the generic `invalid_credentials` for BOTH
  *  wrong password and unknown email, so the API can't be used to enumerate
