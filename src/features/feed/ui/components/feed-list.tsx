@@ -62,7 +62,8 @@ export function FeedList({ items, onEndReached }: Props) {
       // Warm the next 3 posters so the next swipe paints instantly (no flash).
       const upcoming = itemsRef.current
         .slice(firstIndex + 1, firstIndex + 4)
-        .map((it) => it.primaryReel.posterUrl);
+        .map((it) => it.primaryReel.posterUrl)
+        .filter((url): url is string => url != null);
       if (upcoming.length) void Image.prefetch(upcoming, { cachePolicy: 'memory-disk' });
     }
   }).current;

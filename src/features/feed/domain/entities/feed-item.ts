@@ -11,11 +11,13 @@ export interface ReelMedia {
   id: string;
   mediaType: ReelMediaType;
   /** Poster/thumbnail shown instantly (blurhash-backed) before media loads. */
-  posterUrl: string;
+  posterUrl?: string;
   /** Video source(s), or the ordered images of an image-set reel. */
   sources: string[];
   blurhash?: string;
   durationMs?: number;
+  /** width/height ratio (e.g. 0.5625 = 9:16). Required for CLS-free layout. */
+  aspectRatio?: number;
 }
 
 export interface FeedItemPrice {
