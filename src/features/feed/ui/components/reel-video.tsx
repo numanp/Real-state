@@ -27,9 +27,14 @@ interface Props {
  */
 export function ReelVideo({ reel, isActive }: Props) {
   const muted = useFeedUiStore((s) => s.muted);
-  const [firstFrame, setFirstFrame] = useState(false);
 
   const source = reel.sources[0] ?? null;
+  // Track WHICH source has painted (not a bare boolean): when FlashList recycles
+  // this instance into a different reel, `source` changes and `firstFrame`
+  // derives back to false on its own — no setState-in-effect, and crucially no
+  // stale poster-hide that would flash black before the new player paints (§7.4).
+  const [paintedSource, setPaintedSource] = useState<string | null>(null);
+  const firstFrame = source !== null && paintedSource === source;
   const player = useVideoPlayer(source, (p) => {
     p.loop = true;
     p.muted = muted;
@@ -67,7 +72,7 @@ export function ReelVideo({ reel, isActive }: Props) {
         player={player}
         contentFit="cover"
         nativeControls={false}
-        onFirstFrameRender={() => setFirstFrame(true)}
+        onFirstFrameRender={() => setPaintedSource(source)}
         style={{ flex: 1 }}
       />
 
