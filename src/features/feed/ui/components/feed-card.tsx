@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 import { Pressable, View } from 'react-native';
 
 import type { FeedItem } from '@/features/feed/domain/entities/feed-item';
@@ -37,12 +37,18 @@ function specsLabel(item: FeedItem): string {
 export const FeedCard = memo(function FeedCard({ item, height, width }: Props) {
   const router = useRouter();
   const { trackDetail } = useFeedTracking();
+  // Debounce: a fast double-tap otherwise pushed the detail route twice (a
+  // duplicate screen under the first) and double-counted the `detail` signal.
+  const lastTapRef = useRef(0);
 
   return (
     <View style={{ height, width }} className="bg-black">
       <Pressable
         style={{ flex: 1 }}
         onPress={() => {
+          const now = Date.now();
+          if (now - lastTapRef.current < 700) return;
+          lastTapRef.current = now;
           trackDetail(item.id);
           router.push(`/property/${item.id}`);
         }}

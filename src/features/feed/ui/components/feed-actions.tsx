@@ -52,7 +52,10 @@ export function FeedActions({ propertyId, likes }: Props) {
 
   return (
     <View className="absolute bottom-28 right-3 items-center gap-5">
-      <Action label={String(likes + (isLiked ? 1 : 0))} onPress={onLike}>
+      {/* Server count already includes the viewer's like (denormalized like_count),
+          so we render it raw — adding (isLiked ? 1 : 0) double-counted any property
+          the viewer had already liked. The heart fill/animation is the like feedback. */}
+      <Action label={String(likes)} onPress={onLike}>
         <Animated.View style={heartStyle}>
           <Heart
             size={36}
@@ -62,8 +65,10 @@ export function FeedActions({ propertyId, likes }: Props) {
         </Animated.View>
       </Action>
 
+      {/* Super-like is a one-shot action, not a toggle: the star stays an outline.
+          It must NOT fill from `isLiked` (the heart's state) — that read as "super-liked". */}
       <Action label="Super" onPress={() => void superLike()}>
-        <Star size={32} color="#facc15" fill={isLiked ? '#facc15' : 'transparent'} />
+        <Star size={32} color="#facc15" fill="transparent" />
       </Action>
 
       <Action
