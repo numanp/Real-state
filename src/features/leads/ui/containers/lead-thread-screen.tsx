@@ -17,7 +17,8 @@ export function LeadThreadScreen() {
   const session = useSessionStore((s) => s.session);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { messages, loading, sending, error, replyError, load, reply, markRead } = useLeadThread(id);
+  const { messages, loading, sending, error, replyError, load, reply, markRead, close } =
+    useLeadThread(id);
   const [draft, setDraft] = useState('');
 
   useEffect(() => {
@@ -25,6 +26,10 @@ export function LeadThreadScreen() {
     void load();
     void markRead();
   }, [id, load, markRead]);
+
+  async function onArchive() {
+    if (await close()) router.back();
+  }
 
   if (!session) {
     return (
@@ -48,7 +53,10 @@ export function LeadThreadScreen() {
         style={{ paddingTop: insets.top + 12 }}
       >
         <Text className="text-2xl font-bold">Conversación</Text>
-        <Button label="‹ Volver" variant="secondary" size="sm" onPress={() => router.back()} />
+        <View className="flex-row gap-2">
+          <Button label="Archivar" variant="secondary" size="sm" onPress={onArchive} />
+          <Button label="‹ Volver" variant="secondary" size="sm" onPress={() => router.back()} />
+        </View>
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, gap: 8 }}>
@@ -78,7 +86,7 @@ export function LeadThreadScreen() {
         style={{ paddingBottom: insets.bottom + 8 }}
       >
         {replyError ? (
-          <Text className="px-1 text-sm text-destructive">No se pudo enviar. Probá de nuevo.</Text>
+          <Text className="px-1 text-sm text-destructive">No se pudo completar la acción. Probá de nuevo.</Text>
         ) : null}
         <View className="flex-row items-end gap-2">
           <Input

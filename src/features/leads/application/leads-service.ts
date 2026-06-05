@@ -50,4 +50,8 @@ export class LeadsService {
   getLeadThread(leadId: string, limit?: number, offset?: number): Promise<ThreadMessage[]> {
     return this.repo.getLeadThread(leadId, limit, offset);
   }
+
+  closeLead(leadId: string): Promise<void> {
+    return this.repo.closeLead(leadId);
+  }
 }

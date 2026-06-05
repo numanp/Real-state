@@ -54,5 +54,15 @@ export function useLeadThread(leadId: string) {
     }
   }, [leadId]);
 
-  return { messages, loading, sending, error, replyError, load, reply, markRead };
+  const close = useCallback(async (): Promise<boolean> => {
+    try {
+      await container.leads.closeLead(leadId);
+      return true;
+    } catch (e) {
+      setReplyError(e instanceof Error ? e : new Error(String(e)));
+      return false;
+    }
+  }, [leadId]);
+
+  return { messages, loading, sending, error, replyError, load, reply, markRead, close };
 }

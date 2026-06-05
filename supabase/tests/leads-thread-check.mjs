@@ -123,5 +123,19 @@ ok('owner sees the same 3-entry thread', (ownerThread ?? []).length === 3);
 ok("owner's view: original message is_mine=false", ownerThread?.[0]?.is_mine === false);
 ok("owner's view: owner reply is_mine=true", ownerThread?.[1]?.is_mine === true);
 
+// --- close / archive (lifecycle) --------------------------------------------
+const strangerClose = await stranger.client.rpc('close_lead', { p_lead_id: leadId });
+ok('a non-participant cannot close the lead', !!strangerClose.error, strangerClose.error?.message);
+
+const ownerClose = await owner.client.rpc('close_lead', { p_lead_id: leadId });
+ok('a participant can close the lead', !ownerClose.error, ownerClose.error?.message);
+const { data: recvClosed } = await owner.client.rpc('get_received_leads', { p_limit: 50, p_offset: 0 });
+ok("closed lead reads status 'closed'", (recvClosed ?? []).find((r) => r.id === leadId)?.status === 'closed');
+
+// a new reply reopens the conversation
+await buyer.client.rpc('reply_to_lead', { p_lead_id: leadId, p_body: 'Reabro la consulta' });
+const { data: recvReopened } = await owner.client.rpc('get_received_leads', { p_limit: 50, p_offset: 0 });
+ok("a reply reopens a closed lead to 'replied'", (recvReopened ?? []).find((r) => r.id === leadId)?.status === 'replied');
+
 console.log(`\n${fail === 0 ? 'ALL OK' : `${fail} FAILED`}`);
 process.exit(fail === 0 ? 0 : 1);
