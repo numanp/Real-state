@@ -62,16 +62,27 @@ export function FeedList({ items, onEndReached }: Props) {
       // Warm the next 3 posters so the next swipe paints instantly (no flash).
       const upcoming = itemsRef.current
         .slice(firstIndex + 1, firstIndex + 4)
-        .map((it) => it.primaryReel.posterUrl);
+        .map((it) => it.primaryReel.posterUrl)
+        .filter((url): url is string => url != null);
       if (upcoming.length) void Image.prefetch(upcoming, { cachePolicy: 'memory-disk' });
     }
   }).current;
 
+  // Reactive read of the active index so exactly one card mounts a playing video.
+  // The list re-renders only when the active index changes (a swipe), not on
+  // every scroll frame — `setActiveIndex` fires once per viewable-item change.
+  const activeIndex = useFeedControlStore((s) => s.activeIndex);
+
   const renderItem = useCallback(
-    ({ item }: { item: FeedItem }) => (
-      <FeedCard item={item} height={size.height} width={size.width} />
+    ({ item, index }: { item: FeedItem; index: number }) => (
+      <FeedCard
+        item={item}
+        height={size.height}
+        width={size.width}
+        isActive={index === activeIndex}
+      />
     ),
-    [size.height, size.width],
+    [size.height, size.width, activeIndex],
   );
 
   return (

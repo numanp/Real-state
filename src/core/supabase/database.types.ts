@@ -1495,6 +1495,16 @@ export type Database = {
           published_at: string
           save_count: number
           title: string
+          /** Reel fields — present on every row (INNER JOIN, fail-closed). */
+          reel_id: string
+          media_type: Database["public"]["Enums"]["reel_media_type"]
+          video_path: string | null
+          poster_path: string | null
+          image_paths: string[] | null
+          thumbnail_blurhash: string | null
+          duration_ms: number | null
+          aspect_ratio: number
+          caption: string | null
         }[]
       }
       recompute_cover_image: {

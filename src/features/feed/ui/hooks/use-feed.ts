@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { container } from '@/core/di/container';
+import { useFeedControlStore } from '@/core/store/feed-control-store';
 import { useFeedModeStore } from '@/core/store/feed-mode-store';
 import { useFiltersStore } from '@/core/store/filters-store';
 import { useInteractionsStore } from '@/core/store/interactions-store';
@@ -83,6 +84,10 @@ export function useFeed() {
     exhausted.current = false;
     inFlight.current = false;
     setItems([]);
+    // A fresh list always starts at the top; reset the shared active index so a
+    // stale index from the previous scroll doesn't auto-play the wrong card
+    // before the first viewable event fires.
+    useFeedControlStore.getState().setActiveIndex(0);
     if (mode === 'forYou') void loadForYou();
     else void loadMore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
