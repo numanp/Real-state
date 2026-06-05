@@ -13,6 +13,9 @@ import { GetFeedPage } from '@/features/feed/application/get-feed-page';
 import { InMemoryFeedRepository } from '@/features/feed/infrastructure/in-memory-feed-repository';
 import { MOCK_FEED } from '@/features/feed/infrastructure/mock-feed-data';
 import { SupabaseFeedRepository } from '@/features/feed/infrastructure/supabase-feed-repository';
+import { LeadsService } from '@/features/leads/application/leads-service';
+import { InMemoryLeadsRepository } from '@/features/leads/infrastructure/in-memory-leads-repository';
+import { SupabaseLeadsRepository } from '@/features/leads/infrastructure/supabase-leads-repository';
 import { CreateListingService } from '@/features/listings/application/create-listing-service';
 import { InMemoryListingsRepository } from '@/features/listings/infrastructure/in-memory-listings-repository';
 import { SupabaseListingsRepository } from '@/features/listings/infrastructure/supabase-listings-repository';
@@ -70,6 +73,7 @@ const entitlementsRepository = useDb
 const listingsRepository = useDb
   ? new SupabaseListingsRepository()
   : new InMemoryListingsRepository();
+const leadsRepository = useDb ? new SupabaseLeadsRepository() : new InMemoryLeadsRepository();
 const verificationRepository = useDb
   ? new SupabaseVerificationRepository()
   : new InMemoryVerificationRepository();
@@ -96,6 +100,7 @@ export const container = {
   savedSearches: new SavedSearchesService(savedSearchesRepository),
   entitlements: entitlementsRepository,
   listings: new CreateListingService(listingsRepository),
+  leads: new LeadsService(leadsRepository),
   verification: new VerificationService(verificationRepository),
   contact: contactRepository,
   reviews: new ReviewsService(reviewsRepository),
