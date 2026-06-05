@@ -4,7 +4,9 @@ import {
   MESSAGE_MAX,
   MESSAGE_MIN,
   type ReceivedLead,
+  type RepliedMessage,
   type SentLead,
+  type ThreadMessage,
 } from '@/features/leads/domain/entities/lead';
 import { LeadError, type LeadsRepository } from '@/features/leads/domain/ports/leads-repository';
 
@@ -35,5 +37,17 @@ export class LeadsService {
 
   markLeadRead(leadId: string): Promise<void> {
     return this.repo.markLeadRead(leadId);
+  }
+
+  async replyToLead(leadId: string, body: string): Promise<RepliedMessage> {
+    const trimmed = body.trim();
+    if (!messageSchema.safeParse(trimmed).success) {
+      throw new LeadError('invalid_message', `message must be ${MESSAGE_MIN}-${MESSAGE_MAX} chars`);
+    }
+    return this.repo.replyToLead(leadId, trimmed);
+  }
+
+  getLeadThread(leadId: string, limit?: number, offset?: number): Promise<ThreadMessage[]> {
+    return this.repo.getLeadThread(leadId, limit, offset);
   }
 }

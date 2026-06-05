@@ -3,9 +3,13 @@ import {
   type CreatedLead,
   mapCreatedLead,
   mapReceivedLeads,
+  mapRepliedMessage,
   mapSentLeads,
+  mapThread,
   type ReceivedLead,
+  type RepliedMessage,
   type SentLead,
+  type ThreadMessage,
 } from '@/features/leads/domain/entities/lead';
 import { leadErrorFromMessage, type LeadsRepository } from '@/features/leads/domain/ports/leads-repository';
 
@@ -47,5 +51,26 @@ export class SupabaseLeadsRepository implements LeadsRepository {
   async markLeadRead(leadId: string): Promise<void> {
     const { error } = await supabase.rpc('mark_lead_read', { p_lead_id: leadId });
     if (error) throw new Error(`leads.markLeadRead: ${error.message}`);
+  }
+
+  async replyToLead(leadId: string, body: string): Promise<RepliedMessage> {
+    const { data, error } = await supabase.rpc('reply_to_lead', {
+      p_lead_id: leadId,
+      p_body: body,
+    });
+    if (error) throw leadErrorFromMessage(error.message);
+    const replied = mapRepliedMessage(data);
+    if (!replied) throw new Error('leads.replyToLead: empty response');
+    return replied;
+  }
+
+  async getLeadThread(leadId: string, limit = 100, offset = 0): Promise<ThreadMessage[]> {
+    const { data, error } = await supabase.rpc('get_lead_thread', {
+      p_lead_id: leadId,
+      p_limit: limit,
+      p_offset: offset,
+    });
+    if (error) throw new Error(`leads.getLeadThread: ${error.message}`);
+    return mapThread(data);
   }
 }

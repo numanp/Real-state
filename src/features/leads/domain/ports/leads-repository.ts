@@ -1,17 +1,22 @@
 import type {
   CreatedLead,
   ReceivedLead,
+  RepliedMessage,
   SentLead,
+  ThreadMessage,
 } from '@/features/leads/domain/entities/lead';
 
-/** Domain failure codes — mirror the server RAISE codes in 0034_leads.sql
- *  (P0001). 'unknown' is the fallback for unrecognized transport/DB errors. */
+/** Domain failure codes — mirror the server RAISE codes in 0034_leads.sql /
+ *  0035_lead_messages.sql (P0001). 'unknown' is the fallback for unrecognized
+ *  transport/DB errors. */
 const KNOWN_CODES = [
   'auth_required',
   'invalid_message',
   'property_not_found',
   'self_inquiry',
   'lead_rate_limited',
+  'lead_not_found',
+  'not_participant',
 ] as const;
 
 export type LeadErrorCode = (typeof KNOWN_CODES)[number] | 'unknown';
@@ -50,4 +55,8 @@ export interface LeadsRepository {
   getReceivedLeads(limit?: number, offset?: number): Promise<ReceivedLead[]>;
   /** Flip one of the caller's received leads from 'new' to 'read'. Idempotent. */
   markLeadRead(leadId: string): Promise<void>;
+  /** Post a message to a lead's thread (buyer or owner only). Flips it to 'replied'. */
+  replyToLead(leadId: string, body: string): Promise<RepliedMessage>;
+  /** The lead's thread (original inquiry + replies), oldest-first. Participant-only. */
+  getLeadThread(leadId: string, limit?: number, offset?: number): Promise<ThreadMessage[]>;
 }
