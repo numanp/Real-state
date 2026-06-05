@@ -7,6 +7,7 @@
        node supabase/tests/contact-check.mjs
 */
 import { createClient } from '@supabase/supabase-js';
+import { createConfirmedUser, anonClient } from './_helpers.mjs';
 
 const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const ANON = process.env.SUPABASE_ANON_KEY;
@@ -19,17 +20,7 @@ const ok = (name, cond, detail = '') => {
   console.log(`${cond ? '✓' : '✗ FAIL'}  ${name}${detail ? `  [${detail}]` : ''}`);
 };
 
-async function signUp() {
-  const c = newClient();
-  const { data, error } = await c.auth.signUp({
-    email: `ctc_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`,
-    password: 'password1234',
-  });
-  if (error) throw new Error(error.message);
-  return { c, id: data.user.id };
-}
-
-const { data: anyProp } = await newClient()
+const { data: anyProp } = await anonClient()
   .from('properties')
   .select('id')
   .eq('status', 'active')
@@ -37,8 +28,8 @@ const { data: anyProp } = await newClient()
   .single();
 ok('found a visible property to query', !!anyProp?.id);
 
-const A = await signUp();
-const free = await A.c.rpc('get_listing_contact', { p_property_id: anyProp.id });
+const A = await createConfirmedUser(`ctc_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`);
+const free = await A.client.rpc('get_listing_contact', { p_property_id: anyProp.id });
 ok('free user → level none (paywall)', free.data?.level === 'none' && free.data?.upgrade_required === true, JSON.stringify(free.data));
 ok('free user → NO whatsapp/phone exposed', !free.data?.contact_whatsapp && !free.data?.contact_phone);
 
@@ -63,7 +54,7 @@ if (SERVICE) {
   }
 
   await svc.rpc('dev_grant_entitlement', { p_user: A.id, p_tier: 'ultimate' });
-  const full = await A.c.rpc('get_listing_contact', { p_property_id: pid });
+  const full = await A.client.rpc('get_listing_contact', { p_property_id: pid });
   ok('ultimate user → level full', full.data?.level === 'full', JSON.stringify(full.data).slice(0, 160));
   ok(
     'ultimate user → actionable whatsapp present',

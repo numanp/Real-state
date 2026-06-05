@@ -71,11 +71,10 @@ export class SupabaseEntitlementsRepository implements EntitlementsRepository {
     return rows ? mapRows(rows as EntRow[], tier) : { ...FREE_ENTITLEMENTS, tier };
   }
 
-  async startUltimateTrial(fingerprint: string): Promise<TrialResult> {
-    const { data, error } = await supabase.rpc('start_ultimate_trial', {
-      p_identity_fingerprint: fingerprint,
-      p_device_fingerprint: fingerprint,
-    });
+  async startUltimateTrial(): Promise<TrialResult> {
+    // No client-supplied fingerprint: the RPC derives the anti-abuse identity
+    // from the caller's verified email server-side (migration 0031).
+    const { data, error } = await supabase.rpc('start_ultimate_trial');
     if (error) throw new Error(`entitlements.trial: ${error.message}`);
     // Invalidate AFTER the trial commits, so a getMine() that raced the RPC and
     // cached pre-trial data can't be served stale by the follow-up refresh().

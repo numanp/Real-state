@@ -6,6 +6,7 @@
        node supabase/tests/saved-searches-check.mjs
 */
 import { createClient } from '@supabase/supabase-js';
+import { createConfirmedUser } from './_helpers.mjs';
 
 const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const ANON = process.env.SUPABASE_ANON_KEY;
@@ -18,18 +19,11 @@ const ok = (name, cond, detail = '') => {
   console.log(`${cond ? '✓' : '✗ FAIL'}  ${name}${detail ? `  [${detail}]` : ''}`);
 };
 
-async function signUp() {
-  const c = newClient();
-  const { data, error } = await c.auth.signUp({
-    email: `ss_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`,
-    password: 'password1234',
-  });
-  if (error) throw new Error(error.message);
-  return { c, id: data.user.id };
-}
+const signUp = () =>
+  createConfirmedUser(`ss_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`);
 
 const A = await signUp();
-const ins1 = await A.c
+const ins1 = await A.client
   .from('saved_searches')
   .insert({ user_id: A.id, name: 'Depto 2 amb', filters: {} })
   .select('id');
@@ -40,12 +34,12 @@ if (SERVICE) {
   const grant = await svc.rpc('dev_grant_entitlement', { p_user: A.id, p_tier: 'pro' });
   ok('service_role grants pro', !grant.error, grant.error?.message);
 
-  const ins2 = await A.c.from('saved_searches').insert({ user_id: A.id, name: 's1', filters: {} }).select('id');
+  const ins2 = await A.client.from('saved_searches').insert({ user_id: A.id, name: 's1', filters: {} }).select('id');
   ok('pro user CAN save a search', !ins2.error, ins2.error?.message);
 
-  await A.c.from('saved_searches').insert({ user_id: A.id, name: 's2', filters: {} });
-  await A.c.from('saved_searches').insert({ user_id: A.id, name: 's3', filters: {} });
-  const ins4 = await A.c.from('saved_searches').insert({ user_id: A.id, name: 's4', filters: {} }).select('id');
+  await A.client.from('saved_searches').insert({ user_id: A.id, name: 's2', filters: {} });
+  await A.client.from('saved_searches').insert({ user_id: A.id, name: 's3', filters: {} });
+  const ins4 = await A.client.from('saved_searches').insert({ user_id: A.id, name: 's4', filters: {} }).select('id');
   ok('pro user blocked at the 4th saved search (limit 3)', !!ins4.error, ins4.error?.message ?? 'inserted 4th!');
 } else {
   console.log('\n(set SUPABASE_SERVICE_ROLE_KEY to also test the pro-tier quota)');

@@ -7,6 +7,7 @@
        node supabase/tests/verification-check.mjs
 */
 import { createClient } from '@supabase/supabase-js';
+import { createConfirmedUser, anonClient } from './_helpers.mjs';
 
 const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const ANON = process.env.SUPABASE_ANON_KEY;
@@ -19,14 +20,31 @@ const ok = (name, cond, detail = '') => {
   console.log(`${cond ? '✓' : '✗ FAIL'}  ${name}${detail ? `  [${detail}]` : ''}`);
 };
 
+// account_kind is set by handle_new_user() from signup metadata and is then
+// IMMUTABLE (guard_profile_immutables reverts it). The shared helper does not
+// pass metadata, so the agency case provisions a confirmed user inline with the
+// admin API, seeding raw_user_meta_data.account_kind = 'agency' at creation.
 async function signUp(kind) {
-  const c = newClient();
-  const { data, error } = await c.auth.signUp({
-    email: `vrf_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`,
-    password: 'password1234',
-    options: kind ? { data: { account_kind: kind } } : undefined,
+  const email = `vrf_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`;
+  if (!kind) {
+    const { client, id } = await createConfirmedUser(email);
+    return { c: client, id };
+  }
+  if (!SERVICE) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY required to provision an account_kind=agency user');
+  }
+  const password = 'password1234';
+  const admin = createClient(URL, SERVICE, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { account_kind: kind },
   });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(`createUser(${email}): ${error.message}`);
+  const c = anonClient();
+  const { error: se } = await c.auth.signInWithPassword({ email, password });
+  if (se) throw new Error(`signIn(${email}): ${se.message}`);
   return { c, id: data.user.id };
 }
 

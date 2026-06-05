@@ -5,8 +5,8 @@ import { useEntitlementsStore } from '@/core/store/entitlements-store';
 import { useSessionStore } from '@/core/store/session-store';
 
 /** Loads the user's entitlements into the store on sign-in, exposes a refresh,
- *  and the trial action. The trial fingerprint is the user id (per-user once)
- *  for this build; production would use a real device fingerprint. */
+ *  and the trial action. The trial's anti-abuse identity is derived server-side
+ *  from the caller's verified email (migration 0031) — no client fingerprint. */
 export function useEntitlements() {
   const session = useSessionStore((s) => s.session);
   const entitlements = useEntitlementsStore((s) => s.entitlements);
@@ -27,7 +27,7 @@ export function useEntitlements() {
 
   const startTrial = useCallback(async () => {
     if (!session) return { eligible: false, trialEndsAt: null, reason: 'no_session' };
-    const result = await container.entitlements.startUltimateTrial(session.user.id);
+    const result = await container.entitlements.startUltimateTrial();
     await refresh();
     return result;
   }, [session, refresh]);

@@ -7,6 +7,7 @@
        node supabase/tests/push-dispatch-check.mjs
 */
 import { createClient } from '@supabase/supabase-js';
+import { createConfirmedUser } from './_helpers.mjs';
 
 const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const ANON = process.env.SUPABASE_ANON_KEY;
@@ -25,15 +26,8 @@ if (!ANON || !SERVICE) {
 }
 const svc = newClient(SERVICE);
 
-async function signUp(prefix) {
-  const c = newClient(ANON);
-  const { data, error } = await c.auth.signUp({
-    email: `${prefix}_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`,
-    password: 'password1234',
-  });
-  if (error) throw new Error(error.message);
-  return { c, id: data.user.id };
-}
+const signUp = (prefix) =>
+  createConfirmedUser(`${prefix}_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`);
 
 const CITY = `dispcity_${Math.floor(Math.random() * 1e9)}`;
 
@@ -41,9 +35,9 @@ async function savedSearchWithMatch(prefix, withToken) {
   const u = await signUp(prefix);
   await svc.rpc('dev_grant_entitlement', { p_user: u.id, p_tier: 'pro' });
   if (withToken) {
-    await u.c.rpc('register_push_token', { p_token: `ExponentPushToken[${prefix}_${Math.floor(Math.random() * 1e9)}]`, p_platform: 'ios' });
+    await u.client.rpc('register_push_token', { p_token: `ExponentPushToken[${prefix}_${Math.floor(Math.random() * 1e9)}]`, p_platform: 'ios' });
   }
-  const { data: s } = await u.c
+  const { data: s } = await u.client
     .from('saved_searches')
     .insert({ user_id: u.id, name: `${prefix} rent`, filters: { operation: 'rent', city: CITY } })
     .select('id')

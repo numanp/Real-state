@@ -7,6 +7,7 @@
        node supabase/tests/push-keyset-check.mjs
 */
 import { createClient } from '@supabase/supabase-js';
+import { createConfirmedUser } from './_helpers.mjs';
 
 const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const ANON = process.env.SUPABASE_ANON_KEY;
@@ -25,21 +26,13 @@ if (!ANON || !SERVICE) {
 }
 const svc = newClient(SERVICE);
 
-const A = await (async () => {
-  const c = newClient(ANON);
-  const { data, error } = await c.auth.signUp({
-    email: `keyset_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`,
-    password: 'password1234',
-  });
-  if (error) throw new Error(error.message);
-  return { c, id: data.user.id };
-})();
+const A = await createConfirmedUser(`keyset_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`);
 
 await svc.rpc('dev_grant_entitlement', { p_user: A.id, p_tier: 'pro' });
-await A.c.rpc('register_push_token', { p_token: `ExponentPushToken[K_${Math.floor(Math.random() * 1e9)}]` });
+await A.client.rpc('register_push_token', { p_token: `ExponentPushToken[K_${Math.floor(Math.random() * 1e9)}]` });
 
 const CITY = `keysetcity_${Math.floor(Math.random() * 1e9)}`;
-const { data: s } = await A.c
+const { data: s } = await A.client
   .from('saved_searches')
   .insert({ user_id: A.id, name: 'keyset', filters: { operation: 'rent', city: CITY } })
   .select('id')

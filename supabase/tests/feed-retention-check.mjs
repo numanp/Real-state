@@ -7,6 +7,7 @@
        node supabase/tests/feed-retention-check.mjs
 */
 import { createClient } from '@supabase/supabase-js';
+import { createConfirmedUser } from './_helpers.mjs';
 
 const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const ANON = process.env.SUPABASE_ANON_KEY;
@@ -24,14 +25,8 @@ if (!ANON || !SERVICE) {
   process.exit(2);
 }
 
-// A signed-up user gives us a real profile (FK target for feed_events).
-const a = newClient(ANON);
-const { data: signUp, error: suErr } = await a.auth.signUp({
-  email: `ret_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`,
-  password: 'password1234',
-});
-if (suErr) throw new Error(suErr.message);
-const userId = signUp.user.id;
+// A confirmed user gives us a real profile (FK target for feed_events).
+const { id: userId } = await createConfirmedUser(`ret_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`);
 
 const svc = newClient(SERVICE);
 const daysAgo = (n) => new Date(Date.now() - n * 86400_000).toISOString();

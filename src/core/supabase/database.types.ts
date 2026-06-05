@@ -1559,7 +1559,7 @@ export type Database = {
         Returns: string
       }
       start_ultimate_trial: {
-        Args: { p_device_fingerprint?: string; p_identity_fingerprint: string }
+        Args: never
         Returns: {
           eligible: boolean
           reason: string

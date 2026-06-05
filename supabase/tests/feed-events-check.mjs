@@ -3,23 +3,10 @@
   SupabaseFeedEventsRepository row shape) and read only their own; anon cannot read.
   Run: SUPABASE_URL=... SUPABASE_ANON_KEY=... node supabase/tests/feed-events-check.mjs
 */
-import { createClient } from '@supabase/supabase-js';
+import { createConfirmedUser, anonClient } from './_helpers.mjs';
 
-const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const ANON = process.env.SUPABASE_ANON_KEY;
-if (!ANON) {
-  console.error('Set SUPABASE_ANON_KEY');
-  process.exit(2);
-}
-
-const c = createClient(URL, ANON, { auth: { persistSession: false } });
 const email = `fe_${Date.now()}@example.com`;
-const { data: su, error: se } = await c.auth.signUp({ email, password: 'password1234' });
-if (se) {
-  console.log('✗ signup:', se.message);
-  process.exit(1);
-}
-const uid = su.user.id;
+const { client: c, id: uid } = await createConfirmedUser(email);
 
 const { data: props } = await c.from('properties').select('id').limit(1);
 const pid = props?.[0]?.id ?? null;
@@ -33,7 +20,7 @@ console.log(`${ie ? '✗ FAIL' : '✓'} insert feed_events ${ie ? `[${ie.message
 const { data: mine } = await c.from('feed_events').select('event_type,dwell_ms');
 console.log(`✓ read own = ${mine?.length} events [${(mine ?? []).map((r) => r.event_type).join(',')}]`);
 
-const anon = createClient(URL, ANON, { auth: { persistSession: false } });
+const anon = anonClient();
 const { data: ar } = await anon.from('feed_events').select('id').limit(5);
 console.log(`${(ar?.length ?? 0) === 0 ? '✓' : '✗ FAIL'} anon cannot read feed_events (rows=${ar?.length ?? 0})`);
 

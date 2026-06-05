@@ -3,11 +3,7 @@
   ranked deck leans to the preferred operation and excludes already-seen items.
   Run: SUPABASE_URL=... SUPABASE_ANON_KEY=... node supabase/tests/ranking-check.mjs
 */
-import { createClient } from '@supabase/supabase-js';
-
-const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const ANON = process.env.SUPABASE_ANON_KEY;
-const c = createClient(URL, ANON, { auth: { persistSession: false } });
+import { createConfirmedUser } from './_helpers.mjs';
 
 let fail = 0;
 const ok = (name, cond, detail = '') => {
@@ -15,8 +11,7 @@ const ok = (name, cond, detail = '') => {
   console.log(`${cond ? '✓' : '✗ FAIL'}  ${name}${detail ? `  [${detail}]` : ''}`);
 };
 
-await c.auth.signUp({ email: `rank_${Date.now()}@example.com`, password: 'password1234' });
-const me = (await c.auth.getUser()).data.user.id;
+const { client: c, id: me } = await createConfirmedUser(`rank_${Date.now()}@example.com`);
 
 const { data: rents } = await c.from('properties').select('id').eq('listing_type', 'rent').limit(2);
 for (const r of rents ?? []) {

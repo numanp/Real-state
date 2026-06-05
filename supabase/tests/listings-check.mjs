@@ -3,11 +3,7 @@
   shows in the public feed; another user cannot edit or delete it.
   Run: SUPABASE_URL=... SUPABASE_ANON_KEY=... node supabase/tests/listings-check.mjs
 */
-import { createClient } from '@supabase/supabase-js';
-
-const URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const ANON = process.env.SUPABASE_ANON_KEY;
-const newClient = () => createClient(URL, ANON, { auth: { persistSession: false } });
+import { createConfirmedUser, anonClient } from './_helpers.mjs';
 
 let fail = 0;
 const ok = (name, cond, detail = '') => {
@@ -15,18 +11,10 @@ const ok = (name, cond, detail = '') => {
   console.log(`${cond ? '✓' : '✗ FAIL'}  ${name}${detail ? `  [${detail}]` : ''}`);
 };
 
-async function signUp() {
-  const c = newClient();
-  const { data, error } = await c.auth.signUp({
-    email: `lst_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`,
-    password: 'password1234',
-  });
-  if (error) throw new Error(error.message);
-  return { c, id: data.user.id };
-}
+const newUser = () => createConfirmedUser(`lst_${Math.floor(Math.random() * 1e9)}_${Date.now()}@example.com`);
 
-const A = await signUp();
-const { data: created, error: ce } = await A.c
+const A = await newUser();
+const { data: created, error: ce } = await A.client
   .from('properties')
   .insert({
     owner_id: A.id,
@@ -45,31 +33,31 @@ const { data: created, error: ce } = await A.c
 ok('owner A creates a listing', !ce && !!created, ce?.message ?? created?.id);
 const pid = created?.id;
 
-const anon = newClient();
+const anon = anonClient();
 const { data: feed } = await anon.from('properties').select('id').eq('id', pid);
 ok('listing appears in the public feed (anon read)', (feed?.length ?? 0) === 1);
 
-const B = await signUp();
-const { data: bUpd } = await B.c.from('properties').update({ title: 'hacked' }).eq('id', pid).select('id');
+const B = await newUser();
+const { data: bUpd } = await B.client.from('properties').update({ title: 'hacked' }).eq('id', pid).select('id');
 ok('user B CANNOT edit A listing', (bUpd?.length ?? 0) === 0, `affected=${bUpd?.length}`);
 
-const { data: bDel } = await B.c.from('properties').delete().eq('id', pid).select('id');
+const { data: bDel } = await B.client.from('properties').delete().eq('id', pid).select('id');
 ok('user B CANNOT delete A listing', (bDel?.length ?? 0) === 0, `affected=${bDel?.length}`);
 
-const { data: mine } = await A.c.from('properties').select('id').eq('owner_id', A.id);
+const { data: mine } = await A.client.from('properties').select('id').eq('owner_id', A.id);
 ok('owner A sees their own listing', (mine?.length ?? 0) >= 1, `count=${mine?.length}`);
 
 // --- 0018: owner cannot tamper system-managed columns on their OWN row ---
-await A.c.from('properties').update({ like_count: 999 }).eq('id', pid).select('id');
-const { data: afterLike } = await A.c
+await A.client.from('properties').update({ like_count: 999 }).eq('id', pid).select('id');
+const { data: afterLike } = await A.client
   .from('properties')
   .select('like_count')
   .eq('id', pid)
   .single();
 ok('owner CANNOT inflate like_count (reverted by guard)', (afterLike?.like_count ?? -1) === 0, `like_count=${afterLike?.like_count}`);
 
-await A.c.from('properties').update({ published_at: '2999-01-01T00:00:00Z' }).eq('id', pid).select('id');
-const { data: afterPub } = await A.c.from('properties').select('published_at').eq('id', pid).single();
+await A.client.from('properties').update({ published_at: '2999-01-01T00:00:00Z' }).eq('id', pid).select('id');
+const { data: afterPub } = await A.client.from('properties').select('published_at').eq('id', pid).single();
 ok(
   'owner CANNOT pin published_at to the future (reverted)',
   new Date(afterPub.published_at).getFullYear() < 2999,
@@ -78,16 +66,16 @@ ok(
 
 // The depth-1 guard must NOT block the depth-2 counter trigger: a real like
 // still increments like_count (the invariant the guard's pg_trigger_depth gate exists for).
-await A.c.from('likes').insert({ user_id: A.id, property_id: pid });
-const { data: afterCounter } = await A.c.from('properties').select('like_count').eq('id', pid).single();
+await A.client.from('likes').insert({ user_id: A.id, property_id: pid });
+const { data: afterCounter } = await A.client.from('properties').select('like_count').eq('id', pid).single();
 ok(
   'counter trigger STILL increments like_count despite the immutability guard',
   (afterCounter?.like_count ?? -1) === 1,
   `like_count=${afterCounter?.like_count}`,
 );
 
-await A.c.from('properties').update({ title: 'Título editado' }).eq('id', pid).select('id');
-const { data: afterTitle } = await A.c.from('properties').select('title').eq('id', pid).single();
+await A.client.from('properties').update({ title: 'Título editado' }).eq('id', pid).select('id');
+const { data: afterTitle } = await A.client.from('properties').select('title').eq('id', pid).single();
 ok('owner CAN still edit a legit column (title)', afterTitle?.title === 'Título editado', afterTitle?.title);
 
 console.log(`\n${fail === 0 ? 'ALL OK' : `${fail} FAILED`}`);
