@@ -29,19 +29,5 @@ export function useLeads() {
     }
   }, []);
 
-  const markRead = useCallback(
-    async (leadId: string) => {
-      // Mirror useSendLead's discipline: never let a rejected RPC become an
-      // unhandled rejection at the `void markRead(...)` call site.
-      try {
-        await container.leads.markLeadRead(leadId);
-        await load();
-      } catch (e) {
-        setError(e instanceof Error ? e : new Error(String(e)));
-      }
-    },
-    [load],
-  );
-
-  return { received, sent, loading, error, load, markRead };
+  return { received, sent, loading, error, load };
 }

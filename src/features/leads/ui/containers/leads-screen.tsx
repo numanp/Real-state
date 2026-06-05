@@ -38,7 +38,7 @@ export function LeadsScreen() {
   const session = useSessionStore((s) => s.session);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { received, sent, loading, error, load, markRead } = useLeads();
+  const { received, sent, loading, error, load } = useLeads();
   const [tab, setTab] = useState<'received' | 'sent'>('received');
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export function LeadsScreen() {
               {received.map((l) => (
                 <Pressable
                   key={l.id}
-                  onPress={() => (l.status === 'new' ? void markRead(l.id) : undefined)}
+                  onPress={() => router.push(`/lead/${l.id}`)}
                   className="gap-1 rounded-xl bg-card p-4"
                 >
                   <View className="flex-row items-center justify-between gap-2">
@@ -117,7 +117,7 @@ export function LeadsScreen() {
             {sent.map((l) => (
               <Pressable
                 key={l.id}
-                onPress={() => router.push(`/property/${l.propertyId}`)}
+                onPress={() => router.push(`/lead/${l.id}`)}
                 className="gap-1 rounded-xl bg-card p-4"
               >
                 <Text className="text-base font-medium" numberOfLines={1}>
