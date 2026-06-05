@@ -85,6 +85,7 @@ export function SavedScreen() {
           variant="secondary"
           onPress={() => router.push('/verify')}
         />
+        <Button label="✉️ Mis consultas" variant="secondary" onPress={() => router.push('/leads')} />
       </View>
 
       <Text className="px-5 pb-2 pt-3 text-base font-bold">Me gusta</Text>

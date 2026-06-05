@@ -5,7 +5,9 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { container } from '@/core/di/container';
+import { useSessionStore } from '@/core/store/session-store';
 import { ContactSheet } from '@/features/contact/ui/components/contact-sheet';
+import { InquirySheet } from '@/features/leads/ui/components/inquiry-sheet';
 import { useFeedTracking } from '@/features/personalization/ui/use-feed-tracking';
 import { AmenitiesList } from '@/features/properties/ui/components/amenities-list';
 import { CostList } from '@/features/properties/ui/components/cost-list';
@@ -30,6 +32,8 @@ export function PropertyDetailScreen() {
   const { trackShare } = useFeedTracking();
   const [contactOpen, setContactOpen] = useState(false);
   const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const session = useSessionStore((s) => s.session);
   const agencyId = property?.advertiser.agencyId;
   const [agencyRating, setAgencyRating] = useState<AgencyRating | null>(null);
 
@@ -74,6 +78,8 @@ export function PropertyDetailScreen() {
     property.advertiser.type === 'owner'
       ? 'Dueño directo'
       : (property.advertiser.name ?? 'Inmobiliaria');
+  // You can't inquire on your own listing (the server also guards this).
+  const isOwner = !!session && !!property.ownerId && session.user.id === property.ownerId;
 
   async function onShare() {
     if (!property) return;
@@ -157,14 +163,30 @@ export function PropertyDetailScreen() {
         style={{ paddingBottom: insets.bottom + 12 }}
       >
         {/* Contact reveal is entitlement-gated server-side (get_listing_contact);
-            the sheet renders the level the server returns. */}
-        <Button label="Contactar" onPress={() => setContactOpen(true)} />
+            the sheet renders the level the server returns. Consultar opens the
+            standalone InquirySheet — disabled on your own listing. */}
+        <View className="flex-row gap-3">
+          <Button className="flex-1" label="Contactar" onPress={() => setContactOpen(true)} />
+          <Button
+            className={isOwner ? 'flex-1 opacity-50' : 'flex-1'}
+            variant="outline"
+            label="Consultar"
+            disabled={isOwner}
+            onPress={() => setInquiryOpen(true)}
+          />
+        </View>
       </View>
 
       <ContactSheet
         visible={contactOpen}
         propertyId={property.id}
         onClose={() => setContactOpen(false)}
+      />
+
+      <InquirySheet
+        visible={inquiryOpen}
+        propertyId={property.id}
+        onClose={() => setInquiryOpen(false)}
       />
 
       <ReviewSheet

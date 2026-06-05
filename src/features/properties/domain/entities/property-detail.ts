@@ -19,6 +19,9 @@ export interface Amenity {
  */
 export interface PropertyDetail {
   id: string;
+  /** The publisher's profile id, when a real user owns the listing (seed/agency
+   *  listings are null). Used to gate self-inquiry in the UI (disable Consultar). */
+  ownerId?: string;
   title: string;
   description: string;
   operation: Operation;
