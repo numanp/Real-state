@@ -43,6 +43,7 @@ function one<T>(value: T | T[] | null | undefined): T | undefined {
 
 interface Row {
   id: string;
+  owner_id: string | null;
   title: string;
   description: string | null;
   listing_type: 'buy' | 'rent';
@@ -86,7 +87,7 @@ interface Row {
 }
 
 const SELECT = `
-  id, title, description, listing_type, property_kind, price_cents, currency,
+  id, owner_id, title, description, listing_type, property_kind, price_cents, currency,
   area_total_sqm, area_covered_sqm, area_land_sqm, rooms, bedrooms, bathrooms,
   parking_spaces, age_years, orientation, floor_number, condition, locale,
   city, region, country, latitude, longitude, published_at,
@@ -139,6 +140,7 @@ function toDetail(r: Row): PropertyDetail {
 
   return {
     id: r.id,
+    ownerId: r.owner_id ?? undefined,
     title: r.title,
     description: r.description ?? '',
     operation: r.listing_type,
