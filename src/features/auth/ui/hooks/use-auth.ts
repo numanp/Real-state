@@ -15,6 +15,9 @@ export function useAuth() {
   const setReady = useSessionStore((s) => s.setReady);
 
   useEffect(() => {
+    // The root layout bootstraps the session once; any later useAuth mount (feed,
+    // sign-in/up) must not re-read SecureStore — skip if already hydrated.
+    if (useSessionStore.getState().isReady) return;
     let active = true;
     void container.auth.repository.getSession().then((current) => {
       if (!active) return;
